@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -259,4 +258,100 @@ export default function TodayDetailPage() {
                     )}
                   </div>
                   <span className="flex-shrink-0 font-mono text-[13px] text-[#9C9488]">{item.time}</span>
-                 
+                  <button
+                    onClick={() => triggerUpload(item.title)}
+                    aria-label="新增照片"
+                    className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-[#F7F3EC] text-[#C9A227]"
+                  >
+                    <Camera className="h-3.5 w-3.5" strokeWidth={1.9} />
+                  </button>
+                  <button
+                    onClick={() => startEdit(i)}
+                    aria-label="編輯"
+                    className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-[#F7F3EC] text-[#2B2A28]"
+                  >
+                    <Pencil className="h-3.5 w-3.5" strokeWidth={1.9} />
+                  </button>
+                  <a
+                    href={mapLink(item.address || `${item.title} ${detail.city}`)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="在 Google 地圖開啟"
+                    className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-[#F7F3EC] text-[#34495E]"
+                  >
+                    <MapPin className="h-3.5 w-3.5" strokeWidth={1.9} />
+                  </a>
+                </div>
+
+                {itemPhotos.length > 0 && (
+                  <div className="mt-2 flex gap-2 overflow-x-auto pl-12">
+                    {itemPhotos.map((p) => (
+                      <div key={p.id} className="relative flex-shrink-0">
+                        <img
+                          src={p.dataUrl}
+                          alt={item.title}
+                          className="h-16 w-16 rounded-[10px] object-cover"
+                        />
+                        <button
+                          onClick={() => deletePhoto(p.id)}
+                          aria-label="刪除照片"
+                          className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[#2B2A28] shadow"
+                        >
+                          <Trash2 className="h-3 w-3" strokeWidth={2} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="mt-4 rounded-[28px] bg-white p-6 shadow-[0_20px_50px_-30px_rgba(43,42,40,0.35)]">
+        <h2 className="mb-3 text-[17px] font-semibold text-[#2B2A28]">任務清單</h2>
+        {tasks.map((t, i) => (
+          <motion.button
+            key={t.id}
+            onClick={() => toggle(t.id)}
+            initial={{ opacity: 0, x: -6 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3, delay: i * 0.03 }}
+            className="flex w-full items-center gap-3 border-t border-[#ECE6DA] py-3 text-left first:border-t-0"
+          >
+            <span
+              className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md transition-colors ${
+                t.done ? "bg-[#A9BFA0]" : "border-2 border-[#E3DDD0]"
+              }`}
+            >
+              {t.done && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
+            </span>
+            <span className={`text-[16px] ${t.done ? "text-[#9C9488] line-through" : "text-[#2B2A28]"}`}>
+              {t.label}
+            </span>
+          </motion.button>
+        ))}
+      </section>
+
+      <section className="mt-4 flex items-center justify-between rounded-[28px] bg-white p-6 shadow-[0_20px_50px_-30px_rgba(43,42,40,0.35)]">
+        <div>
+          <p className="text-[13px] text-[#9C9488]">今日花費</p>
+          <p className="mt-0.5 text-[19px] font-semibold text-[#2B2A28]">
+            THB {detail.expenseToday.toLocaleString()}
+          </p>
+        </div>
+        <button
+          aria-label="新增花費"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-[#34495E] text-white"
+        >
+          <Plus className="h-5 w-5" strokeWidth={2.25} />
+        </button>
+      </section>
+
+      <TripCalendarSheet open={calendarOpen} onClose={() => setCalendarOpen(false)} />
+
+      <BottomNav />
+    </main>
+  );
+}
