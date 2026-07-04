@@ -172,13 +172,13 @@ export default function TodayDetailPage() {
   return (
     <main className="mx-auto max-w-[430px] px-5 pb-[120px] pt-8">
       <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        onChange={handleFileChange}
-        className="hidden"
-      />
+  ref={fileInputRef}
+  type="file"
+  accept="image/*"
+  onChange={handleFileChange}
+  className="hidden"
+/>
+
 
       <div className="flex items-center justify-between">
         <div>
