@@ -1,27 +1,16 @@
+
 "use client";
 
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
-import {
-  CalendarDays,
-  Plus,
-  Check,
-  MapPin,
-  X,
-  Pencil,
-  Camera,
-  Trash2,
-  CreditCard,
-  Banknote,
-} from "lucide-react";
+import { CalendarDays, Plus, Check, MapPin, X, Pencil, Camera, Trash2 } from "lucide-react";
 import BottomNav from "../../components/BottomNav";
+import TripCalendarSheet from "../../components/TripCalendarSheet";
 import { trip, mapLink } from "../../data/trip";
 import type { TimelineItem } from "../../data/trip";
 import { addPhoto, compressImage, getPhotosForDay, removePhoto } from "../../lib/photos";
 import type { TripPhoto } from "../../lib/photos";
-import { addExpense, getExpensesForDay, removeExpense } from "../../lib/expenses";
-import type { ExpenseItem, PaymentMethod } from "../../lib/expenses";
 
 export default function TodayDetailPage() {
   const params = useParams();
@@ -31,6 +20,7 @@ export default function TodayDetailPage() {
   const [tasks, setTasks] = useState(detail?.tasks ?? []);
   const [timeline, setTimeline] = useState<TimelineItem[]>(detail?.timeline ?? []);
   const [isAdding, setIsAdding] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const [newTime, setNewTime] = useState("");
   const [newTitle, setNewTitle] = useState("");
 
@@ -44,17 +34,8 @@ export default function TodayDetailPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [activeUploadItem, setActiveUploadItem] = useState<string | null>(null);
 
-  const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
-  const [isAddingExpense, setIsAddingExpense] = useState(false);
-  const [newAmount, setNewAmount] = useState("");
-  const [newNote, setNewNote] = useState("");
-  const [newMethod, setNewMethod] = useState<PaymentMethod>("cash");
-
   useEffect(() => {
-    if (dayNumber) {
-      setPhotos(getPhotosForDay(dayNumber));
-      setExpenses(getExpensesForDay(dayNumber));
-    }
+    if (dayNumber) setPhotos(getPhotosForDay(dayNumber));
   }, [dayNumber]);
 
   function toggle(id: string) {
@@ -134,32 +115,6 @@ export default function TodayDetailPage() {
     setPhotos((prev) => prev.filter((p) => p.id !== id));
   }
 
-  function addExpenseItem() {
-    const amount = Number(newAmount);
-    if (!amount || amount <= 0) return;
-    const expense: ExpenseItem = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      day: dayNumber,
-      amount,
-      note: newNote.trim() || "未命名",
-      method: newMethod,
-      addedAt: Date.now(),
-    };
-    addExpense(expense);
-    setExpenses((prev) => [...prev, expense]);
-    setNewAmount("");
-    setNewNote("");
-    setNewMethod("cash");
-    setIsAddingExpense(false);
-  }
-
-  function deleteExpense(id: string) {
-    removeExpense(dayNumber, id);
-    setExpenses((prev) => prev.filter((e) => e.id !== id));
-  }
-
-  const dayTotal = expenses.reduce((sum, e) => sum + e.amount, 0);
-
   if (!detail) {
     return (
       <main className="mx-auto max-w-[430px] px-5 pb-[120px] pt-8">
@@ -172,13 +127,12 @@ export default function TodayDetailPage() {
   return (
     <main className="mx-auto max-w-[430px] px-5 pb-[120px] pt-8">
       <input
-  ref={fileInputRef}
-  type="file"
-  accept="image/*"
-  onChange={handleFileChange}
-  className="hidden"
-/>
-
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        className="hidden"
+      />
 
       <div className="flex items-center justify-between">
         <div>
@@ -187,10 +141,11 @@ export default function TodayDetailPage() {
           </h1>
           <p className="mt-1 text-[14px] text-[#9C9488]">{detail.city}</p>
         </div>
-        <CalendarDays className="h-6 w-6 text-[#9C9488]" strokeWidth={1.75} />
+        <button onClick={() => setCalendarOpen(true)} aria-label="開啟月曆">
+          <CalendarDays className="h-6 w-6 text-[#9C9488]" strokeWidth={1.75} />
+        </button>
       </div>
 
-      {/* Timeline */}
       <section className="mt-6 rounded-[28px] bg-white p-6 shadow-[0_20px_50px_-30px_rgba(43,42,40,0.35)]">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-[17px] font-semibold text-[#2B2A28]">時間軸</h2>
@@ -304,192 +259,4 @@ export default function TodayDetailPage() {
                     )}
                   </div>
                   <span className="flex-shrink-0 font-mono text-[13px] text-[#9C9488]">{item.time}</span>
-                  <button
-                    onClick={() => triggerUpload(item.title)}
-                    aria-label="新增照片"
-                    className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-[#F7F3EC] text-[#C9A227]"
-                  >
-                    <Camera className="h-3.5 w-3.5" strokeWidth={1.9} />
-                  </button>
-                  <button
-                    onClick={() => startEdit(i)}
-                    aria-label="編輯"
-                    className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-[#F7F3EC] text-[#2B2A28]"
-                  >
-                    <Pencil className="h-3.5 w-3.5" strokeWidth={1.9} />
-                  </button>
-                  <a
-                    href={mapLink(item.address || `${item.title} ${detail.city}`)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="在 Google 地圖開啟"
-                    className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-[#F7F3EC] text-[#34495E]"
-                  >
-                    <MapPin className="h-3.5 w-3.5" strokeWidth={1.9} />
-                  </a>
-                </div>
-
-                {itemPhotos.length > 0 && (
-                  <div className="mt-2 flex gap-2 overflow-x-auto pl-12">
-                    {itemPhotos.map((p) => (
-                      <div key={p.id} className="relative flex-shrink-0">
-                        <img
-                          src={p.dataUrl}
-                          alt={item.title}
-                          className="h-16 w-16 rounded-[10px] object-cover"
-                        />
-                        <button
-                          onClick={() => deletePhoto(p.id)}
-                          aria-label="刪除照片"
-                          className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[#2B2A28] shadow"
-                        >
-                          <Trash2 className="h-3 w-3" strokeWidth={2} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </motion.div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Tasks */}
-      <section className="mt-4 rounded-[28px] bg-white p-6 shadow-[0_20px_50px_-30px_rgba(43,42,40,0.35)]">
-        <h2 className="mb-3 text-[17px] font-semibold text-[#2B2A28]">任務清單</h2>
-        {tasks.map((t, i) => (
-          <motion.button
-            key={t.id}
-            onClick={() => toggle(t.id)}
-            initial={{ opacity: 0, x: -6 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.3, delay: i * 0.03 }}
-            className="flex w-full items-center gap-3 border-t border-[#ECE6DA] py-3 text-left first:border-t-0"
-          >
-            <span
-              className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md transition-colors ${
-                t.done ? "bg-[#A9BFA0]" : "border-2 border-[#E3DDD0]"
-              }`}
-            >
-              {t.done && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
-            </span>
-            <span className={`text-[16px] ${t.done ? "text-[#9C9488] line-through" : "text-[#2B2A28]"}`}>
-              {t.label}
-            </span>
-          </motion.button>
-        ))}
-      </section>
-
-      {/* Expense */}
-      <section className="mt-4 rounded-[28px] bg-white p-6 shadow-[0_20px_50px_-30px_rgba(43,42,40,0.35)]">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-[13px] text-[#9C9488]">今日花費</p>
-            <p className="mt-0.5 text-[19px] font-semibold text-[#2B2A28]">
-              THB {dayTotal.toLocaleString()}
-            </p>
-          </div>
-          <button
-            onClick={() => setIsAddingExpense((v) => !v)}
-            aria-label="新增花費"
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-[#34495E] text-white"
-          >
-            {isAddingExpense ? (
-              <X className="h-5 w-5" strokeWidth={2.25} />
-            ) : (
-              <Plus className="h-5 w-5" strokeWidth={2.25} />
-            )}
-          </button>
-        </div>
-
-        {isAddingExpense && (
-          <div className="mt-4 rounded-[16px] border border-[#ECE6DA] p-3">
-            <div className="flex gap-2">
-              <input
-                type="number"
-                placeholder="金額 (THB)"
-                value={newAmount}
-                onChange={(e) => setNewAmount(e.target.value)}
-                className="w-[110px] rounded-[10px] border border-[#ECE6DA] px-3 py-2 text-[14px] text-[#2B2A28] outline-none focus:border-[#A9BFA0]"
-              />
-              <input
-                type="text"
-                placeholder="備註（例如：午餐）"
-                value={newNote}
-                onChange={(e) => setNewNote(e.target.value)}
-                className="flex-1 rounded-[10px] border border-[#ECE6DA] px-3 py-2 text-[14px] text-[#2B2A28] outline-none focus:border-[#A9BFA0]"
-              />
-            </div>
-
-            <div className="mt-2 flex gap-2">
-              <button
-                onClick={() => setNewMethod("cash")}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-[10px] border py-2 text-[13px] font-medium ${
-                  newMethod === "cash"
-                    ? "border-[#A9BFA0] bg-[#A9BFA0]/15 text-[#4A7A6D]"
-                    : "border-[#ECE6DA] text-[#9C9488]"
-                }`}
-              >
-                <Banknote className="h-4 w-4" strokeWidth={1.9} />
-                現金
-              </button>
-              <button
-                onClick={() => setNewMethod("card")}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-[10px] border py-2 text-[13px] font-medium ${
-                  newMethod === "card"
-                    ? "border-[#8FB0C9] bg-[#8FB0C9]/15 text-[#34495E]"
-                    : "border-[#ECE6DA] text-[#9C9488]"
-                }`}
-              >
-                <CreditCard className="h-4 w-4" strokeWidth={1.9} />
-                信用卡
-              </button>
-            </div>
-
-            <button
-              onClick={addExpenseItem}
-              className="mt-2 w-full rounded-[10px] bg-[#A9BFA0] py-2 text-[14px] font-medium text-white"
-            >
-              加入花費
-            </button>
-          </div>
-        )}
-
-        {expenses.length > 0 && (
-          <div className="mt-4 space-y-1">
-            {expenses.map((e) => (
-              <div
-                key={e.id}
-                className="flex items-center justify-between border-t border-[#ECE6DA] py-2.5 first:border-t-0"
-              >
-                <div className="flex items-center gap-2">
-                  {e.method === "cash" ? (
-                    <Banknote className="h-4 w-4 text-[#4A7A6D]" strokeWidth={1.9} />
-                  ) : (
-                    <CreditCard className="h-4 w-4 text-[#34495E]" strokeWidth={1.9} />
-                  )}
-                  <span className="text-[15px] text-[#2B2A28]">{e.note}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="font-mono text-[14px] text-[#2B2A28]">
-                    THB {e.amount.toLocaleString()}
-                  </span>
-                  <button
-                    onClick={() => deleteExpense(e.id)}
-                    aria-label="刪除"
-                    className="flex h-6 w-6 items-center justify-center rounded-full bg-[#F7F3EC] text-[#9C9488]"
-                  >
-                    <Trash2 className="h-3 w-3" strokeWidth={2} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <BottomNav />
-    </main>
-  );
-}
+                 
