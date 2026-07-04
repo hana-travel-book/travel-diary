@@ -1,27 +1,31 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { CalendarDays, Plus, Check, MapPin, X, Pencil, Camera, Trash2 } from "lucide-react";
 import BottomNav from "../../components/BottomNav";
 import TripCalendarSheet from "../../components/TripCalendarSheet";
 import { trip, mapLink } from "../../data/trip";
-import type { TimelineItem } from "../../data/trip";
+import type { TimelineItem, TaskItem } from "../../data/trip";
 import { addPhoto, compressImage, getPhotosForDay, removePhoto } from "../../lib/photos";
 import type { TripPhoto } from "../../lib/photos";
 
 export default function TodayDetailPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const dayNumber = Number(params.day);
   const detail = trip.dayDetails[dayNumber];
 
-  const [tasks, setTasks] = useState(detail?.tasks ?? []);
+  const [tasks, setTasks] = useState<TaskItem[]>(detail?.tasks ?? []);
   const [timeline, setTimeline] = useState<TimelineItem[]>(detail?.timeline ?? []);
   const [isAdding, setIsAdding] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [newTime, setNewTime] = useState("");
   const [newTitle, setNewTitle] = useState("");
+
+  const [isAddingTask, setIsAddingTask] = useState(false);
+  const [newTaskLabel, setNewTaskLabel] = useState("");
 
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editTime, setEditTime] = useState("");
@@ -37,10 +41,32 @@ export default function TodayDetailPage() {
     if (dayNumber) setPhotos(getPhotosForDay(dayNumber));
   }, [dayNumber]);
 
+  useEffect(() => {
+    if (searchParams.get("addTask") === "1") {
+      setIsAddingTask(true);
+    }
+  }, [searchParams]);
+
   function toggle(id: string) {
     setTasks((prev) =>
       prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t))
     );
+  }
+
+  function addTask() {
+    if (!newTaskLabel.trim()) return;
+    const item: TaskItem = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      label: newTaskLabel.trim(),
+      done: false,
+    };
+    setTasks((prev) => [...prev, item]);
+    setNewTaskLabel("");
+    setIsAddingTask(false);
+  }
+
+  function deleteTask(id: string) {
+    setTasks((prev) => prev.filter((t) => t.id !== id));
   }
 
   function addTimelineItem() {
@@ -310,27 +336,76 @@ export default function TodayDetailPage() {
       </section>
 
       <section className="mt-4 rounded-[28px] bg-white p-6 shadow-[0_20px_50px_-30px_rgba(43,42,40,0.35)]">
-        <h2 className="mb-3 text-[17px] font-semibold text-[#2B2A28]">任務清單</h2>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-[17px] font-semibold text-[#2B2A28]">任務清單</h2>
+          <button
+            onClick={() => setIsAddingTask((v) => !v)}
+            aria-label="新增任務"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-[#F7F3EC] text-[#2B2A28]"
+          >
+            {isAddingTask ? (
+              <X className="h-4 w-4" strokeWidth={2} />
+            ) : (
+              <Plus className="h-4 w-4" strokeWidth={2} />
+            )}
+          </button>
+        </div>
+
+        {isAddingTask && (
+          <div className="mb-3 flex gap-2">
+            <input
+              type="text"
+              placeholder="任務內容"
+              value={newTaskLabel}
+              onChange={(e) => setNewTaskLabel(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addTask()}
+              className="flex-1 rounded-[10px] border border-[#ECE6DA] px-3 py-2 text-[14px] text-[#2B2A28] outline-none focus:border-[#A9BFA0]"
+            />
+            <button
+              onClick={addTask}
+              className="rounded-[10px] bg-[#A9BFA0] px-4 py-2 text-[14px] font-medium text-white"
+            >
+              新增
+            </button>
+          </div>
+        )}
+
+        {tasks.length === 0 && !isAddingTask && (
+          <p className="py-2 text-[14px] text-[#9C9488]">尚無任務，點右上角「+」新增</p>
+        )}
+
         {tasks.map((t, i) => (
-          <motion.button
+          <motion.div
             key={t.id}
-            onClick={() => toggle(t.id)}
             initial={{ opacity: 0, x: -6 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.3, delay: i * 0.03 }}
-            className="flex w-full items-center gap-3 border-t border-[#ECE6DA] py-3 text-left first:border-t-0"
+            className="flex w-full items-center gap-3 border-t border-[#ECE6DA] py-3 first:border-t-0"
           >
-            <span
+            <button
+              onClick={() => toggle(t.id)}
               className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md transition-colors ${
                 t.done ? "bg-[#A9BFA0]" : "border-2 border-[#E3DDD0]"
               }`}
             >
               {t.done && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
-            </span>
-            <span className={`text-[16px] ${t.done ? "text-[#9C9488] line-through" : "text-[#2B2A28]"}`}>
+            </button>
+            <button
+              onClick={() => toggle(t.id)}
+              className={`flex-1 text-left text-[16px] ${
+                t.done ? "text-[#9C9488] line-through" : "text-[#2B2A28]"
+              }`}
+            >
               {t.label}
-            </span>
-          </motion.button>
+            </button>
+            <button
+              onClick={() => deleteTask(t.id)}
+              aria-label="刪除任務"
+              className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-[#F7F3EC] text-[#9C9488]"
+            >
+              <Trash2 className="h-3.5 w-3.5" strokeWidth={1.9} />
+            </button>
+          </motion.div>
         ))}
       </section>
 
