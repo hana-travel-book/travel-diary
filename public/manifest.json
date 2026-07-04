@@ -1,0 +1,13 @@
+{
+  "name": "TravelDiary — Lucia & Hannah's Thailand Journey",
+  "short_name": "TravelDiary",
+  "description": "Every journey becomes a story.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F7F3EC",
+  "theme_color": "#2B2A28",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
