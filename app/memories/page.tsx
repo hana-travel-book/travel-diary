@@ -6,7 +6,7 @@ import { Pencil, Trash2, X, ChevronLeft, ChevronRight } from "lucide-react";
 import BottomNav from "../components/BottomNav";
 import TripSwitcher from "../components/TripSwitcher";
 import { trip } from "../data/trip";
-import { getAllPhotos, removePhoto } from "../lib/photos";
+import { getAllPhotos, removePhoto, getQuote, saveQuote } from "../lib/photos";
 import type { TripPhoto } from "../lib/photos";
 
 export default function MemoriesPage() {
@@ -18,15 +18,16 @@ export default function MemoriesPage() {
 
   const [photosByDay, setPhotosByDay] = useState<Record<number, TripPhoto[]>>({});
 
-  // Lightbox 狀態：記錄目前正在看哪一天、第幾張
   const [lightbox, setLightbox] = useState<{ day: number; index: number } | null>(null);
 
   useEffect(() => {
     setPhotosByDay(getAllPhotos());
+    setQuote(getQuote(memories.quote));
   }, []);
 
-  function saveQuote() {
+  function handleSaveQuote() {
     setQuote(draft);
+    saveQuote(draft);
     setIsEditing(false);
   }
 
@@ -76,10 +77,6 @@ export default function MemoriesPage() {
   }
 
   const lightboxPhoto = lightbox ? (photosByDay[lightbox.day] ?? [])[lightbox.index] : null;
-  const lightboxDetail = lightbox ? dayDetails[lightbox.day] : null;
-  const lightboxJourney = lightbox
-    ? journeyDays.find((j) => j.day === lightbox.day)
-    : null;
 
   return (
     <main className="mx-auto max-w-[430px] px-5 pb-[120px] pt-8">
@@ -123,7 +120,7 @@ export default function MemoriesPage() {
                 取消
               </button>
               <button
-                onClick={saveQuote}
+                onClick={handleSaveQuote}
                 className="rounded-full bg-[#A9BFA0] px-4 py-1.5 text-[13px] font-medium text-white"
               >
                 儲存
@@ -144,7 +141,6 @@ export default function MemoriesPage() {
         </section>
       ) : (
         <div className="relative mt-6 pl-8">
-          {/* 垂直時間軸線 */}
           <div className="absolute left-[11px] top-2 bottom-2 w-[2px] bg-[#ECE6DA]" />
 
           {daysWithPhotos.map((day, idx) => {
@@ -160,7 +156,6 @@ export default function MemoriesPage() {
                 transition={{ duration: 0.35, delay: idx * 0.03 }}
                 className="relative mb-8 last:mb-0"
               >
-                {/* 時間軸節點 */}
                 <span className="absolute -left-8 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#A9BFA0] text-[11px] font-semibold text-white ring-4 ring-[#F7F3EC]">
                   {day}
                 </span>
@@ -179,7 +174,6 @@ export default function MemoriesPage() {
                   </span>
                 </div>
 
-                {/* 橫向捲動照片列 */}
                 <div className="flex gap-2 overflow-x-auto pb-1">
                   {dayPhotos.map((p, photoIdx) => (
                     <button

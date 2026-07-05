@@ -100,3 +100,24 @@ export function saveProfile(profile: ProfileData) {
     alert("儲存失敗，請再試一次");
   }
 }
+
+const QUOTE_KEY = "travelDiaryQuote";
+
+export function getQuote(fallback: string): string {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const raw = localStorage.getItem(QUOTE_KEY);
+    return raw ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+export function saveQuote(quote: string) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(QUOTE_KEY, quote);
+  } catch {
+    alert("儲存失敗，請再試一次");
+  }
+}
