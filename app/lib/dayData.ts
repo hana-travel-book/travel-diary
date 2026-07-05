@@ -1,7 +1,6 @@
 import type { TaskItem } from "../data/trip";
 
 const TASKS_KEY = "travelDiaryTasks";
-const EXPENSES_KEY = "travelDiaryExpenses";
 
 type TaskStore = Record<number, TaskItem[]>;
 
@@ -35,36 +34,4 @@ export function saveTasksForDay(day: number, tasks: TaskItem[]) {
   const store = readTaskStore();
   store[day] = tasks;
   writeTaskStore(store);
-}
-
-type ExpenseStore = Record<number, number>;
-
-function readExpenseStore(): ExpenseStore {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = localStorage.getItem(EXPENSES_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
-
-function writeExpenseStore(store: ExpenseStore) {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(EXPENSES_KEY, JSON.stringify(store));
-  } catch {
-    alert("儲存失敗，請再試一次");
-  }
-}
-
-export function getExpenseForDay(day: number, fallback: number): number {
-  const store = readExpenseStore();
-  return store[day] ?? fallback;
-}
-
-export function saveExpenseForDay(day: number, amount: number) {
-  const store = readExpenseStore();
-  store[day] = amount;
-  writeExpenseStore(store);
 }
