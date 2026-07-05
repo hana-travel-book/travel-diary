@@ -27,6 +27,11 @@ export default function TodayDetailPage() {
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [newTaskLabel, setNewTaskLabel] = useState("");
 
+  const [expenseTotal, setExpenseTotal] = useState(detail?.expenseToday ?? 0);
+  const [isAddingExpense, setIsAddingExpense] = useState(false);
+  const [newExpenseAmount, setNewExpenseAmount] = useState("");
+  const [newExpenseNote, setNewExpenseNote] = useState("");
+
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editTime, setEditTime] = useState("");
   const [editTitle, setEditTitle] = useState("");
@@ -44,6 +49,9 @@ export default function TodayDetailPage() {
   useEffect(() => {
     if (searchParams.get("addTask") === "1") {
       setIsAddingTask(true);
+    }
+    if (searchParams.get("addExpense") === "1") {
+      setIsAddingExpense(true);
     }
   }, [searchParams]);
 
@@ -67,6 +75,15 @@ export default function TodayDetailPage() {
 
   function deleteTask(id: string) {
     setTasks((prev) => prev.filter((t) => t.id !== id));
+  }
+
+  function addExpense() {
+    const amount = Number(newExpenseAmount);
+    if (!amount || amount <= 0) return;
+    setExpenseTotal((prev) => prev + amount);
+    setNewExpenseAmount("");
+    setNewExpenseNote("");
+    setIsAddingExpense(false);
   }
 
   function addTimelineItem() {
@@ -409,19 +426,55 @@ export default function TodayDetailPage() {
         ))}
       </section>
 
-      <section className="mt-4 flex items-center justify-between rounded-[28px] bg-white p-6 shadow-[0_20px_50px_-30px_rgba(43,42,40,0.35)]">
-        <div>
-          <p className="text-[13px] text-[#9C9488]">今日花費</p>
-          <p className="mt-0.5 text-[19px] font-semibold text-[#2B2A28]">
-            THB {detail.expenseToday.toLocaleString()}
-          </p>
+      <section className="mt-4 rounded-[28px] bg-white p-6 shadow-[0_20px_50px_-30px_rgba(43,42,40,0.35)]">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[13px] text-[#9C9488]">今日花費</p>
+            <p className="mt-0.5 text-[19px] font-semibold text-[#2B2A28]">
+              THB {expenseTotal.toLocaleString()}
+            </p>
+          </div>
+          <button
+            onClick={() => setIsAddingExpense((v) => !v)}
+            aria-label="新增花費"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-[#34495E] text-white"
+          >
+            {isAddingExpense ? (
+              <X className="h-5 w-5" strokeWidth={2.25} />
+            ) : (
+              <Plus className="h-5 w-5" strokeWidth={2.25} />
+            )}
+          </button>
         </div>
-        <button
-          aria-label="新增花費"
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-[#34495E] text-white"
-        >
-          <Plus className="h-5 w-5" strokeWidth={2.25} />
-        </button>
+
+        {isAddingExpense && (
+          <div className="mt-4 rounded-[16px] border border-[#ECE6DA] p-3">
+            <div className="flex gap-2">
+              <input
+                type="number"
+                inputMode="decimal"
+                placeholder="金額 (THB)"
+                value={newExpenseAmount}
+                onChange={(e) => setNewExpenseAmount(e.target.value)}
+                className="w-[120px] rounded-[10px] border border-[#ECE6DA] px-3 py-2 text-[14px] text-[#2B2A28] outline-none focus:border-[#A9BFA0]"
+              />
+              <input
+                type="text"
+                placeholder="備註（選填）"
+                value={newExpenseNote}
+                onChange={(e) => setNewExpenseNote(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addExpense()}
+                className="flex-1 rounded-[10px] border border-[#ECE6DA] px-3 py-2 text-[14px] text-[#2B2A28] outline-none focus:border-[#A9BFA0]"
+              />
+            </div>
+            <button
+              onClick={addExpense}
+              className="mt-2 w-full rounded-[10px] bg-[#A9BFA0] py-2 text-[14px] font-medium text-white"
+            >
+              加入花費
+            </button>
+          </div>
+        )}
       </section>
 
       <TripCalendarSheet open={calendarOpen} onClose={() => setCalendarOpen(false)} />
