@@ -13,11 +13,30 @@ const STORAGE_KEY = "travelDiaryExpenses";
 
 type ExpenseStore = Record<number, ExpenseItem[]>;
 
+// 檢查是否為一筆「格式正確」的花費紀錄，過濾掉舊版壞掉的測試資料
+function isValidExpense(e: unknown): e is ExpenseItem {
+  if (!e || typeof e !== "object") return false;
+  const item = e as Partial<ExpenseItem>;
+  return (
+    typeof item.amount === "number" &&
+    !Number.isNaN(item.amount) &&
+    (item.method === "cash" || item.method === "card")
+  );
+}
+
 function readStore(): ExpenseStore {
   if (typeof window === "undefined") return {};
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
+    const parsed = raw ? JSON.parse(raw) : {};
+    // 清洗資料：把每一天的清單過濾成只剩合法項目
+    const cleaned: ExpenseStore = {};
+    for (const key of Object.keys(parsed)) {
+      const day = Number(key);
+      const list = Array.isArray(parsed[key]) ? parsed[key] : [];
+      cleaned[day] = list.filter(isValidExpense);
+    }
+    return cleaned;
   } catch {
     return {};
   }
