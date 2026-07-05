@@ -3,9 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import {
   ChevronRight,
-  Settings,
-  Bell,
-  Globe,
   Download,
   Info,
   LogOut,
@@ -15,6 +12,7 @@ import {
   Pencil,
   Camera,
 } from "lucide-react";
+
 import BottomNav from "../components/BottomNav";
 import CurrencyConverter from "../components/CurrencyConverter";
 import { user, trip } from "../data/trip";
@@ -23,9 +21,6 @@ import { compressImage, getProfile, saveProfile } from "../lib/photos";
 import type { ProfileData } from "../lib/photos";
 
 const menuItems = [
-  { icon: Settings, label: "偏好設定" },
-  { icon: Bell, label: "通知設定" },
-  { icon: Globe, label: "語言設定" },
   { icon: Download, label: "匯出資料" },
   { icon: Info, label: "關於 TravelDiary" },
 ];
