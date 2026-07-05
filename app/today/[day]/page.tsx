@@ -581,22 +581,23 @@ export default function TodayDetailPage() {
                     <CreditCard className="h-3.5 w-3.5 text-[#34495E]" strokeWidth={1.9} />
                   )}
                 </span>
-                <button
-                  onClick={() => openEditExpense(e)}
-                  className="flex-1 text-left text-[14px] text-[#2B2A28]"
-                >
+                <span className="flex-1 text-[14px] text-[#2B2A28]">
                   {e.note || (e.method === "cash" ? "現金支出" : "信用卡支出")}
-                </button>
+                </span>
+                <span className="font-mono text-[14px] text-[#2B2A28]">
+                  THB {e.amount.toLocaleString()}
+                </span>
                 <button
                   onClick={() => openEditExpense(e)}
-                  className="font-mono text-[14px] text-[#2B2A28]"
+                  aria-label="編輯花費"
+                  className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-[#F7F3EC] text-[#2B2A28]"
                 >
-                  THB {e.amount.toLocaleString()}
+                  <Pencil className="h-3.5 w-3.5" strokeWidth={1.9} />
                 </button>
                 <button
                   onClick={() => deleteExpense(e.id)}
                   aria-label="刪除花費"
-                  className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[#9C9488]"
+                  className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[#9C9488]"
                 >
                   <Trash2 className="h-3.5 w-3.5" strokeWidth={1.9} />
                 </button>
