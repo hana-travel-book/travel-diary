@@ -1,7 +1,16 @@
-export interface EmergencyInfo {
+export interface Traveler {
+  id: string;
+  name: string;
   passportName: string;
   passportNumber: string;
   passportExpiry: string;
+  birthday: string;
+  bloodType: string;
+  notes: string;
+}
+
+export interface EmergencyInfo {
+  travelers: Traveler[];
   emergencyContactName: string;
   emergencyContactPhone: string;
   insuranceCompany: string;
@@ -12,10 +21,21 @@ export interface EmergencyInfo {
 
 const STORAGE_KEY = "travelDiaryEmergencyInfo";
 
+function emptyTraveler(): Traveler {
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    name: "",
+    passportName: "",
+    passportNumber: "",
+    passportExpiry: "",
+    birthday: "",
+    bloodType: "",
+    notes: "",
+  };
+}
+
 const defaultInfo: EmergencyInfo = {
-  passportName: "",
-  passportNumber: "",
-  passportExpiry: "",
+  travelers: [],
   emergencyContactName: "",
   emergencyContactPhone: "",
   insuranceCompany: "",
@@ -28,7 +48,9 @@ export function getEmergencyInfo(): EmergencyInfo {
   if (typeof window === "undefined") return defaultInfo;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? { ...defaultInfo, ...JSON.parse(raw) } : defaultInfo;
+    if (!raw) return defaultInfo;
+    const parsed = JSON.parse(raw);
+    return { ...defaultInfo, ...parsed, travelers: parsed.travelers ?? [] };
   } catch {
     return defaultInfo;
   }
@@ -42,3 +64,5 @@ export function saveEmergencyInfo(info: EmergencyInfo) {
     alert("儲存失敗，請再試一次");
   }
 }
+
+export { emptyTraveler };

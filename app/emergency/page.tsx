@@ -2,15 +2,13 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ChevronLeft, Pencil, Save, ShieldAlert, Plane, Phone } from "lucide-react";
+import { ChevronLeft, Pencil, Save, ShieldAlert, Phone, Plus, Trash2, User } from "lucide-react";
 import BottomNav from "../components/BottomNav";
-import { getEmergencyInfo, saveEmergencyInfo } from "../lib/emergencyInfo";
-import type { EmergencyInfo } from "../lib/emergencyInfo";
+import { getEmergencyInfo, saveEmergencyInfo, emptyTraveler } from "../lib/emergencyInfo";
+import type { EmergencyInfo, Traveler } from "../lib/emergencyInfo";
 
-const emptyInfo: EmergencyInfo = {
-  passportName: "",
-  passportNumber: "",
-  passportExpiry: "",
+const defaultInfo: EmergencyInfo = {
+  travelers: [],
   emergencyContactName: "",
   emergencyContactPhone: "",
   insuranceCompany: "",
@@ -20,9 +18,9 @@ const emptyInfo: EmergencyInfo = {
 };
 
 export default function EmergencyPage() {
-  const [info, setInfo] = useState<EmergencyInfo>(emptyInfo);
+  const [info, setInfo] = useState<EmergencyInfo>(defaultInfo);
   const [isEditing, setIsEditing] = useState(false);
-  const [draft, setDraft] = useState<EmergencyInfo>(emptyInfo);
+  const [draft, setDraft] = useState<EmergencyInfo>(defaultInfo);
 
   useEffect(() => {
     setInfo(getEmergencyInfo());
@@ -39,11 +37,31 @@ export default function EmergencyPage() {
     setIsEditing(false);
   }
 
-  function updateField(field: keyof EmergencyInfo, value: string) {
+  function updateField(field: keyof Omit<EmergencyInfo, "travelers">, value: string) {
     setDraft((prev) => ({ ...prev, [field]: value }));
   }
 
-  const hasAnyData = Object.values(info).some((v) => v.trim() !== "");
+  function updateTraveler(id: string, field: keyof Traveler, value: string) {
+    setDraft((prev) => ({
+      ...prev,
+      travelers: prev.travelers.map((t) => (t.id === id ? { ...t, [field]: value } : t)),
+    }));
+  }
+
+  function addTraveler() {
+    setDraft((prev) => ({ ...prev, travelers: [...prev.travelers, emptyTraveler()] }));
+  }
+
+  function removeTraveler(id: string) {
+    setDraft((prev) => ({
+      ...prev,
+      travelers: prev.travelers.filter((t) => t.id !== id),
+    }));
+  }
+
+  const hasAnyData =
+    info.travelers.length > 0 ||
+    Object.entries(info).some(([k, v]) => k !== "travelers" && String(v).trim() !== "");
 
   return (
     <main className="mx-auto max-w-[430px] px-5 pb-[120px] pt-8">
@@ -83,24 +101,95 @@ export default function EmergencyPage() {
 
       {(isEditing || hasAnyData) && (
         <>
-          {/* 護照資訊 */}
+          {/* 同行人護照資訊 */}
           <section className="mt-6 rounded-[28px] bg-white p-6 shadow-[0_20px_50px_-30px_rgba(43,42,40,0.35)]">
-            <div className="mb-4 flex items-center gap-2">
-              <Plane className="h-4 w-4 text-[#34495E]" strokeWidth={1.9} />
-              <h2 className="text-[15px] font-semibold text-[#2B2A28]">護照資訊</h2>
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4 text-[#34495E]" strokeWidth={1.9} />
+                <h2 className="text-[15px] font-semibold text-[#2B2A28]">同行人資料</h2>
+              </div>
+              {isEditing && (
+                <button
+                  onClick={addTraveler}
+                  aria-label="新增同行人"
+                  className="flex h-7 w-7 items-center justify-center rounded-full bg-[#F7F3EC] text-[#2B2A28]"
+                >
+                  <Plus className="h-3.5 w-3.5" strokeWidth={2} />
+                </button>
+              )}
             </div>
 
             {isEditing ? (
-              <div className="space-y-3">
-                <Field label="姓名（護照上）" value={draft.passportName} onChange={(v) => updateField("passportName", v)} />
-                <Field label="護照號碼" value={draft.passportNumber} onChange={(v) => updateField("passportNumber", v)} />
-                <Field label="效期至" value={draft.passportExpiry} onChange={(v) => updateField("passportExpiry", v)} placeholder="例如 2030-05-20" />
+              <div className="space-y-5">
+                {draft.travelers.length === 0 && (
+                  <p className="text-[13px] text-[#9C9488]">尚未新增同行人，點右上角「+」新增</p>
+                )}
+                {draft.travelers.map((t, i) => (
+                  <div
+                    key={t.id}
+                    className="rounded-[16px] border border-[#ECE6DA] p-4"
+                  >
+                    <div className="mb-3 flex items-center justify-between">
+                      <p className="text-[13px] font-semibold text-[#9C9488]">同行人 {i + 1}</p>
+                      <button
+                        onClick={() => removeTraveler(t.id)}
+                        aria-label="刪除這位同行人"
+                        className="flex h-6 w-6 items-center justify-center rounded-full text-[#9C9488]"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" strokeWidth={1.9} />
+                      </button>
+                    </div>
+                    <div className="space-y-3">
+                      <Field label="稱呼" value={t.name} onChange={(v) => updateTraveler(t.id, "name", v)} placeholder="例如：媽媽、Hannah" />
+                      <Field label="姓名（護照上）" value={t.passportName} onChange={(v) => updateTraveler(t.id, "passportName", v)} />
+                      <Field label="護照號碼" value={t.passportNumber} onChange={(v) => updateTraveler(t.id, "passportNumber", v)} />
+                      <Field label="護照效期至" value={t.passportExpiry} onChange={(v) => updateTraveler(t.id, "passportExpiry", v)} placeholder="例如 2030-05-20" />
+                      <div className="flex gap-3">
+                        <div className="flex-1">
+                          <Field label="生日" value={t.birthday} onChange={(v) => updateTraveler(t.id, "birthday", v)} placeholder="例如 2018-03-10" />
+                        </div>
+                        <div className="w-[100px]">
+                          <Field label="血型" value={t.bloodType} onChange={(v) => updateTraveler(t.id, "bloodType", v)} placeholder="例如 O" />
+                        </div>
+                      </div>
+                      <div>
+                        <p className="mb-1 text-[12px] text-[#9C9488]">需注意事項</p>
+                        <textarea
+                          value={t.notes}
+                          onChange={(e) => updateTraveler(t.id, "notes", e.target.value)}
+                          rows={2}
+                          placeholder="例如：對海鮮過敏、有氣喘、正在服用的藥物..."
+                          className="w-full resize-none rounded-[10px] border border-[#ECE6DA] p-3 text-[14px] text-[#2B2A28] outline-none focus:border-[#A9BFA0]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
+            ) : info.travelers.length === 0 ? (
+              <p className="text-[14px] text-[#D8D2C2]">尚未填寫</p>
             ) : (
-              <div className="space-y-2">
-                <InfoRow label="姓名" value={info.passportName} />
-                <InfoRow label="護照號碼" value={info.passportNumber} />
-                <InfoRow label="效期至" value={info.passportExpiry} />
+              <div className="space-y-4">
+                {info.travelers.map((t) => (
+                  <div key={t.id} className="border-t border-[#ECE6DA] pt-3 first:border-t-0 first:pt-0">
+                    <p className="mb-2 text-[15px] font-semibold text-[#2B2A28]">
+                      {t.name || t.passportName || "未命名"}
+                    </p>
+                    <div className="space-y-1.5">
+                      <InfoRow label="護照姓名" value={t.passportName} />
+                      <InfoRow label="護照號碼" value={t.passportNumber} />
+                      <InfoRow label="護照效期" value={t.passportExpiry} />
+                      <InfoRow label="生日" value={t.birthday} />
+                      <InfoRow label="血型" value={t.bloodType} />
+                      {t.notes && (
+                        <div className="flex items-start justify-between gap-3 border-t border-[#ECE6DA] pt-1.5">
+                          <span className="flex-shrink-0 text-[13px] text-[#9C9488]">注意事項</span>
+                          <span className="text-right text-[13px] text-[#2B2A28]">{t.notes}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </section>
@@ -147,7 +236,7 @@ export default function EmergencyPage() {
             )}
           </section>
 
-          {/* 備註 */}
+          {/* 其他備註 */}
           <section className="mt-4 rounded-[28px] bg-white p-6 shadow-[0_20px_50px_-30px_rgba(43,42,40,0.35)]">
             <h2 className="mb-3 text-[15px] font-semibold text-[#2B2A28]">其他備註</h2>
             {isEditing ? (
@@ -155,7 +244,7 @@ export default function EmergencyPage() {
                 value={draft.notes}
                 onChange={(e) => updateField("notes", e.target.value)}
                 rows={3}
-                placeholder="例如：過敏藥物、血型、慢性病用藥..."
+                placeholder="其他重要資訊..."
                 className="w-full resize-none rounded-[16px] border border-[#ECE6DA] p-3 text-[14px] text-[#2B2A28] outline-none focus:border-[#A9BFA0]"
               />
             ) : (
@@ -216,7 +305,7 @@ function Field({
 
 function InfoRow({ label, value, isPhone }: { label: string; value: string; isPhone?: boolean }) {
   return (
-    <div className="flex items-center justify-between border-t border-[#ECE6DA] py-2 first:border-t-0 first:pt-0">
+    <div className="flex items-center justify-between">
       <span className="text-[13px] text-[#9C9488]">{label}</span>
       {value ? (
         isPhone ? (
