@@ -13,7 +13,6 @@ const STORAGE_KEY = "travelDiaryExpenses";
 
 type ExpenseStore = Record<number, ExpenseItem[]>;
 
-// 檢查是否為一筆「格式正確」的花費紀錄，過濾掉舊版壞掉的測試資料
 function isValidExpense(e: unknown): e is ExpenseItem {
   if (!e || typeof e !== "object") return false;
   const item = e as Partial<ExpenseItem>;
@@ -29,7 +28,6 @@ function readStore(): ExpenseStore {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     const parsed = raw ? JSON.parse(raw) : {};
-    // 清洗資料：把每一天的清單過濾成只剩合法項目
     const cleaned: ExpenseStore = {};
     for (const key of Object.keys(parsed)) {
       const day = Number(key);
@@ -83,6 +81,13 @@ export function addExpense(expense: ExpenseItem) {
   const store = readStore();
   const list = store[expense.day] ?? [];
   store[expense.day] = [...list, expense];
+  writeStore(store);
+}
+
+export function updateExpense(day: number, id: string, updates: Partial<Omit<ExpenseItem, "id" | "day">>) {
+  const store = readStore();
+  const list = store[day] ?? [];
+  store[day] = list.map((e) => (e.id === id ? { ...e, ...updates } : e));
   writeStore(store);
 }
 

@@ -11,7 +11,7 @@ import type { TimelineItem, TaskItem } from "../../data/trip";
 import { addPhoto, compressImage, getPhotosForDay, removePhoto } from "../../lib/photos";
 import type { TripPhoto } from "../../lib/photos";
 import { getTasksForDay, saveTasksForDay } from "../../lib/dayData";
-import { getExpensesForDay, addExpense, removeExpense } from "../../lib/expenses";
+import { getExpensesForDay, addExpense, updateExpense, removeExpense } from "../../lib/expenses";
 import type { ExpenseItem, PaymentMethod } from "../../lib/expenses";
 
 export default function TodayDetailPage() {
@@ -32,9 +32,10 @@ export default function TodayDetailPage() {
 
   const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
   const [isAddingExpense, setIsAddingExpense] = useState(false);
-  const [newExpenseAmount, setNewExpenseAmount] = useState("");
-  const [newExpenseNote, setNewExpenseNote] = useState("");
-  const [newExpenseMethod, setNewExpenseMethod] = useState<PaymentMethod>("cash");
+  const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
+  const [expenseAmount, setExpenseAmount] = useState("");
+  const [expenseNote, setExpenseNote] = useState("");
+  const [expenseMethod, setExpenseMethod] = useState<PaymentMethod>("cash");
 
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editTime, setEditTime] = useState("");
@@ -60,7 +61,7 @@ export default function TodayDetailPage() {
       setIsAddingTask(true);
     }
     if (searchParams.get("addExpense") === "1") {
-      setIsAddingExpense(true);
+      openAddExpense();
     }
   }, [searchParams]);
 
@@ -90,28 +91,66 @@ export default function TodayDetailPage() {
     saveTasksForDay(dayNumber, updated);
   }
 
-  function addNewExpense() {
-    const amount = Number(newExpenseAmount);
-    if (!amount || amount <= 0) return;
-    const expense: ExpenseItem = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      day: dayNumber,
-      amount,
-      note: newExpenseNote.trim(),
-      method: newExpenseMethod,
-      addedAt: Date.now(),
-    };
-    addExpense(expense);
-    setExpenses((prev) => [...prev, expense]);
-    setNewExpenseAmount("");
-    setNewExpenseNote("");
-    setNewExpenseMethod("cash");
+  function openAddExpense() {
+    setEditingExpenseId(null);
+    setExpenseAmount("");
+    setExpenseNote("");
+    setExpenseMethod("cash");
+    setIsAddingExpense(true);
+  }
+
+  function openEditExpense(e: ExpenseItem) {
+    setEditingExpenseId(e.id);
+    setExpenseAmount(String(e.amount));
+    setExpenseNote(e.note);
+    setExpenseMethod(e.method);
+    setIsAddingExpense(true);
+  }
+
+  function closeExpenseForm() {
     setIsAddingExpense(false);
+    setEditingExpenseId(null);
+    setExpenseAmount("");
+    setExpenseNote("");
+    setExpenseMethod("cash");
+  }
+
+  function submitExpense() {
+    const amount = Number(expenseAmount);
+    if (!amount || amount <= 0) return;
+
+    if (editingExpenseId) {
+      updateExpense(dayNumber, editingExpenseId, {
+        amount,
+        note: expenseNote.trim(),
+        method: expenseMethod,
+      });
+      setExpenses((prev) =>
+        prev.map((e) =>
+          e.id === editingExpenseId
+            ? { ...e, amount, note: expenseNote.trim(), method: expenseMethod }
+            : e
+        )
+      );
+    } else {
+      const expense: ExpenseItem = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        day: dayNumber,
+        amount,
+        note: expenseNote.trim(),
+        method: expenseMethod,
+        addedAt: Date.now(),
+      };
+      addExpense(expense);
+      setExpenses((prev) => [...prev, expense]);
+    }
+    closeExpenseForm();
   }
 
   function deleteExpense(id: string) {
     removeExpense(dayNumber, id);
     setExpenses((prev) => prev.filter((e) => e.id !== id));
+    if (editingExpenseId === id) closeExpenseForm();
   }
 
   function addTimelineItem() {
@@ -463,7 +502,7 @@ export default function TodayDetailPage() {
             </p>
           </div>
           <button
-            onClick={() => setIsAddingExpense((v) => !v)}
+            onClick={() => (isAddingExpense ? closeExpenseForm() : openAddExpense())}
             aria-label="新增花費"
             className="flex h-11 w-11 items-center justify-center rounded-full bg-[#34495E] text-white"
           >
@@ -482,24 +521,24 @@ export default function TodayDetailPage() {
                 type="number"
                 inputMode="decimal"
                 placeholder="金額 (THB)"
-                value={newExpenseAmount}
-                onChange={(e) => setNewExpenseAmount(e.target.value)}
+                value={expenseAmount}
+                onChange={(e) => setExpenseAmount(e.target.value)}
                 className="w-[120px] rounded-[10px] border border-[#ECE6DA] px-3 py-2 text-[14px] text-[#2B2A28] outline-none focus:border-[#A9BFA0]"
               />
               <input
                 type="text"
                 placeholder="備註（選填）"
-                value={newExpenseNote}
-                onChange={(e) => setNewExpenseNote(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && addNewExpense()}
+                value={expenseNote}
+                onChange={(e) => setExpenseNote(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && submitExpense()}
                 className="flex-1 rounded-[10px] border border-[#ECE6DA] px-3 py-2 text-[14px] text-[#2B2A28] outline-none focus:border-[#A9BFA0]"
               />
             </div>
             <div className="mb-2 flex gap-2">
               <button
-                onClick={() => setNewExpenseMethod("cash")}
+                onClick={() => setExpenseMethod("cash")}
                 className={`flex flex-1 items-center justify-center gap-1.5 rounded-[10px] py-2 text-[14px] font-medium ${
-                  newExpenseMethod === "cash"
+                  expenseMethod === "cash"
                     ? "bg-[#A9BFA0] text-white"
                     : "bg-[#F7F3EC] text-[#9C9488]"
                 }`}
@@ -508,9 +547,9 @@ export default function TodayDetailPage() {
                 現金
               </button>
               <button
-                onClick={() => setNewExpenseMethod("card")}
+                onClick={() => setExpenseMethod("card")}
                 className={`flex flex-1 items-center justify-center gap-1.5 rounded-[10px] py-2 text-[14px] font-medium ${
-                  newExpenseMethod === "card"
+                  expenseMethod === "card"
                     ? "bg-[#34495E] text-white"
                     : "bg-[#F7F3EC] text-[#9C9488]"
                 }`}
@@ -520,10 +559,10 @@ export default function TodayDetailPage() {
               </button>
             </div>
             <button
-              onClick={addNewExpense}
+              onClick={submitExpense}
               className="w-full rounded-[10px] bg-[#A9BFA0] py-2 text-[14px] font-medium text-white"
             >
-              加入花費
+              {editingExpenseId ? "儲存修改" : "加入花費"}
             </button>
           </div>
         )}
@@ -542,12 +581,18 @@ export default function TodayDetailPage() {
                     <CreditCard className="h-3.5 w-3.5 text-[#34495E]" strokeWidth={1.9} />
                   )}
                 </span>
-                <span className="flex-1 text-[14px] text-[#2B2A28]">
+                <button
+                  onClick={() => openEditExpense(e)}
+                  className="flex-1 text-left text-[14px] text-[#2B2A28]"
+                >
                   {e.note || (e.method === "cash" ? "現金支出" : "信用卡支出")}
-                </span>
-                <span className="font-mono text-[14px] text-[#2B2A28]">
+                </button>
+                <button
+                  onClick={() => openEditExpense(e)}
+                  className="font-mono text-[14px] text-[#2B2A28]"
+                >
                   THB {e.amount.toLocaleString()}
-                </span>
+                </button>
                 <button
                   onClick={() => deleteExpense(e.id)}
                   aria-label="刪除花費"
