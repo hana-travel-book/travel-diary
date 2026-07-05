@@ -15,6 +15,8 @@ import {
 
 import BottomNav from "../components/BottomNav";
 import CurrencyConverter from "../components/CurrencyConverter";
+import Link from "next/link";
+import { ShieldAlert } from "lucide-react";
 import { user, trip } from "../data/trip";
 import { getTripTotal, getTripTotalByMethod } from "../lib/expenses";
 import { compressImage, getProfile, saveProfile } from "../lib/photos";
@@ -199,9 +201,19 @@ export default function MePage() {
         </div>
       </section>
 
-      <CurrencyConverter />
+            <CurrencyConverter />
+
+      <Link
+        href="/emergency"
+        className="mt-4 flex items-center gap-3.5 rounded-[28px] bg-white px-6 py-4 shadow-[0_20px_50px_-30px_rgba(43,42,40,0.35)]"
+      >
+        <ShieldAlert className="h-5 w-5 flex-shrink-0 text-[#E8927C]" strokeWidth={1.75} />
+        <span className="flex-1 text-[16px] font-medium text-[#2B2A28]">緊急聯絡卡</span>
+        <ChevronRight className="h-4 w-4 text-[#D8D2C2]" strokeWidth={1.75} />
+      </Link>
 
       {/* Menu */}
+
       <section className="mt-4 rounded-[28px] bg-white shadow-[0_20px_50px_-30px_rgba(43,42,40,0.35)]">
         {menuItems.map(({ icon: Icon, label }) => (
           <button
