@@ -10,6 +10,7 @@ import { trip, mapLink } from "../../data/trip";
 import type { TimelineItem, TaskItem } from "../../data/trip";
 import { addPhoto, compressImage, getPhotosForDay, removePhoto } from "../../lib/photos";
 import type { TripPhoto } from "../../lib/photos";
+import { getTasksForDay, saveTasksForDay, getExpenseForDay, saveExpenseForDay } from "../../lib/dayData";
 
 export default function TodayDetailPage() {
   const params = useParams();
@@ -42,8 +43,12 @@ export default function TodayDetailPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [activeUploadItem, setActiveUploadItem] = useState<string | null>(null);
 
+  // 頁面載入時，從本機儲存讀取任務、花費、照片（如果有的話）
   useEffect(() => {
-    if (dayNumber) setPhotos(getPhotosForDay(dayNumber));
+    if (!dayNumber || !detail) return;
+    setPhotos(getPhotosForDay(dayNumber));
+    setTasks(getTasksForDay(dayNumber, detail.tasks ?? []));
+    setExpenseTotal(getExpenseForDay(dayNumber, detail.expenseToday ?? 0));
   }, [dayNumber]);
 
   useEffect(() => {
@@ -56,9 +61,9 @@ export default function TodayDetailPage() {
   }, [searchParams]);
 
   function toggle(id: string) {
-    setTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t))
-    );
+    const updated = tasks.map((t) => (t.id === id ? { ...t, done: !t.done } : t));
+    setTasks(updated);
+    saveTasksForDay(dayNumber, updated);
   }
 
   function addTask() {
@@ -68,19 +73,25 @@ export default function TodayDetailPage() {
       label: newTaskLabel.trim(),
       done: false,
     };
-    setTasks((prev) => [...prev, item]);
+    const updated = [...tasks, item];
+    setTasks(updated);
+    saveTasksForDay(dayNumber, updated);
     setNewTaskLabel("");
     setIsAddingTask(false);
   }
 
   function deleteTask(id: string) {
-    setTasks((prev) => prev.filter((t) => t.id !== id));
+    const updated = tasks.filter((t) => t.id !== id);
+    setTasks(updated);
+    saveTasksForDay(dayNumber, updated);
   }
 
   function addExpense() {
     const amount = Number(newExpenseAmount);
     if (!amount || amount <= 0) return;
-    setExpenseTotal((prev) => prev + amount);
+    const updated = expenseTotal + amount;
+    setExpenseTotal(updated);
+    saveExpenseForDay(dayNumber, updated);
     setNewExpenseAmount("");
     setNewExpenseNote("");
     setIsAddingExpense(false);
