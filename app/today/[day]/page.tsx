@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { CalendarDays, Plus, Check, MapPin, X, Pencil, Camera, Trash2, Banknote, CreditCard } from "lucide-react";
 import BottomNav from "../../components/BottomNav";
 import TripCalendarSheet from "../../components/TripCalendarSheet";
+import WeatherBadge from "../../components/WeatherBadge";
 import { trip, mapLink } from "../../data/trip";
 import type { TimelineItem, TaskItem } from "../../data/trip";
 import { addPhoto, compressImage, getPhotosForDay, removePhoto } from "../../lib/photos";
@@ -48,7 +49,6 @@ export default function TodayDetailPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [activeUploadItem, setActiveUploadItem] = useState<string | null>(null);
 
-  // 滑動切換日期用
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
 
@@ -82,14 +82,11 @@ export default function TodayDetailPage() {
     touchStartX.current = null;
     touchStartY.current = null;
 
-    // 忽略太短的滑動、或偏向垂直滑動（避免跟捲動衝突）
     if (Math.abs(deltaX) < 60 || Math.abs(deltaX) < Math.abs(deltaY)) return;
 
     if (deltaX < 0 && trip.dayDetails[dayNumber + 1]) {
-      // 往左滑 → 下一天
       router.push(`/today/${dayNumber + 1}`);
     } else if (deltaX > 0 && trip.dayDetails[dayNumber - 1]) {
-      // 往右滑 → 前一天
       router.push(`/today/${dayNumber - 1}`);
     }
   }
@@ -282,6 +279,9 @@ export default function TodayDetailPage() {
             Day {detail.day} · {detail.dateLabel}
           </h1>
           <p className="mt-1 text-[14px] text-[#9C9488]">{detail.city}</p>
+          <div className="mt-1">
+            <WeatherBadge city={detail.city} dayNumber={dayNumber} />
+          </div>
         </div>
         <button onClick={() => setCalendarOpen(true)} aria-label="開啟月曆">
           <CalendarDays className="h-6 w-6 text-[#9C9488]" strokeWidth={1.75} />

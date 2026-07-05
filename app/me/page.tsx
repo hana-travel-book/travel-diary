@@ -16,6 +16,7 @@ import {
   Camera,
 } from "lucide-react";
 import BottomNav from "../components/BottomNav";
+import CurrencyConverter from "../components/CurrencyConverter";
 import { user, trip } from "../data/trip";
 import { getTripTotal, getTripTotalByMethod } from "../lib/expenses";
 import { compressImage, getProfile, saveProfile } from "../lib/photos";
@@ -202,6 +203,8 @@ export default function MePage() {
           </div>
         </div>
       </section>
+
+      <CurrencyConverter />
 
       {/* Menu */}
       <section className="mt-4 rounded-[28px] bg-white shadow-[0_20px_50px_-30px_rgba(43,42,40,0.35)]">
