@@ -18,6 +18,7 @@ export interface TimelineItem {
   subtitle: string;
   emoji: string;
   address?: string;
+  flightNumber?: string;
 }
 
 export interface TaskItem {
@@ -197,7 +198,7 @@ export const trip = {
       day: 9, dateLabel: "7 Aug (Fri)", city: "Hua Hin → Chiang Mai",
       timeline: [
         { time: "10:00", title: "海灘 / 飯店泳池", subtitle: "退房前放鬆", emoji: "🏖️" },
-        { time: "17:20", title: "華欣機場起飛", subtitle: "FD3901", emoji: "✈️" },
+        { time: "17:20", title: "華欣機場起飛", subtitle: "", emoji: "✈️", flightNumber: "FD3901" },
         { time: "18:35", title: "抵達清邁", subtitle: "Check-in 依思迪設計飯店", emoji: "🛬" },
       ],
       tasks: [], expenseToday: 0,
@@ -292,7 +293,7 @@ export const trip = {
       day: 19, dateLabel: "17 Aug (Mon)", city: "Chiang Mai",
       timeline: [
         { time: "09:00", title: "烹飪營 Day1", subtitle: "Kids Cooking & English Camp", emoji: "👩‍🍳" },
-        { time: "11:20", title: "爸爸飛機起飛", subtitle: "CI852 → 桃園", emoji: "✈️" },
+        { time: "11:20", title: "爸爸飛機起飛", subtitle: "→ 桃園", emoji: "✈️", flightNumber: "CI852" },
         { time: "14:00", title: "母女時光", subtitle: "按摩 + 睡午覺", emoji: "💆" },
       ],
       tasks: [], expenseToday: 0,
@@ -393,4 +394,8 @@ export function getDaysLeft(startDateISO: string): number {
 
 export function mapLink(query: string): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}
+
+export function flightLink(flightNumber: string): string {
+  return `https://www.flightaware.com/live/flight/${encodeURIComponent(flightNumber.replace(/\s/g, ""))}`;
 }
