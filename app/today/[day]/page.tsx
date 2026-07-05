@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { CalendarDays, Plus, Check, MapPin, X, Pencil, Camera, Trash2, Banknote, CreditCard } from "lucide-react";
 import BottomNav from "../../components/BottomNav";
@@ -17,6 +17,7 @@ import type { ExpenseItem, PaymentMethod } from "../../lib/expenses";
 export default function TodayDetailPage() {
   const params = useParams();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const dayNumber = Number(params.day);
   const detail = trip.dayDetails[dayNumber];
 
@@ -47,6 +48,10 @@ export default function TodayDetailPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [activeUploadItem, setActiveUploadItem] = useState<string | null>(null);
 
+  // 滑動切換日期用
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+
   const expenseTotal = expenses.reduce((sum, e) => sum + e.amount, 0);
 
   useEffect(() => {
@@ -64,6 +69,30 @@ export default function TodayDetailPage() {
       openAddExpense();
     }
   }, [searchParams]);
+
+  function handleTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  }
+
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+    touchStartX.current = null;
+    touchStartY.current = null;
+
+    // 忽略太短的滑動、或偏向垂直滑動（避免跟捲動衝突）
+    if (Math.abs(deltaX) < 60 || Math.abs(deltaX) < Math.abs(deltaY)) return;
+
+    if (deltaX < 0 && trip.dayDetails[dayNumber + 1]) {
+      // 往左滑 → 下一天
+      router.push(`/today/${dayNumber + 1}`);
+    } else if (deltaX > 0 && trip.dayDetails[dayNumber - 1]) {
+      // 往右滑 → 前一天
+      router.push(`/today/${dayNumber - 1}`);
+    }
+  }
 
   function toggle(id: string) {
     const updated = tasks.map((t) => (t.id === id ? { ...t, done: !t.done } : t));
@@ -234,7 +263,11 @@ export default function TodayDetailPage() {
   }
 
   return (
-    <main className="mx-auto max-w-[430px] px-5 pb-[120px] pt-8">
+    <main
+      className="mx-auto max-w-[430px] px-5 pb-[120px] pt-8"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       <input
         ref={fileInputRef}
         type="file"
