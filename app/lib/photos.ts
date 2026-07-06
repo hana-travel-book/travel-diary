@@ -52,42 +52,12 @@ export function removePhoto(tripId: string, day: number, id: string) {
   writeStore(tripId, store);
 }
 
-// 判斷檔案是否為 HEIC/HEIF 格式（iPhone 預設拍照格式，瀏覽器 <img> 無法直接解碼）
-function isHeicFile(file: File): boolean {
-  const type = file.type.toLowerCase();
-  const name = file.name.toLowerCase();
-  return (
-    type === "image/heic" ||
-    type === "image/heif" ||
-    name.endsWith(".heic") ||
-    name.endsWith(".heif")
-  );
-}
-
-// 壓縮圖片，避免佔用太多儲存空間；HEIC 會先自動轉成 JPEG 再壓縮
-export async function compressImage(
-  file: File,
-  maxWidth = 900,
-  quality = 0.7
+// 嘗試把圖片讀進 <img> 解碼、縮放並壓縮成 JPEG dataURL
+function tryDecodeAndCompress(
+  source: File | Blob,
+  maxWidth: number,
+  quality: number
 ): Promise<string> {
-  let sourceFile: File | Blob = file;
-
-  if (isHeicFile(file)) {
-    try {
-      const heic2any = (await import("heic2any")).default;
-      const converted = await heic2any({
-        blob: file,
-        toType: "image/jpeg",
-        quality: 0.8,
-      });
-      sourceFile = Array.isArray(converted) ? converted[0] : converted;
-    } catch (err) {
-      throw new Error(
-        "這張照片是 HEIC 格式，自動轉檔失敗，請改用 iPhone「編輯」功能另存一份，或截圖後再上傳"
-      );
-    }
-  }
-
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -102,13 +72,40 @@ export async function compressImage(
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         resolve(canvas.toDataURL("image/jpeg", quality));
       };
-      img.onerror = () =>
-        reject(new Error("圖片解碼失敗，可能是不支援的照片格式"));
+      img.onerror = () => reject(new Error("DECODE_FAILED"));
       img.src = e.target?.result as string;
     };
-    reader.onerror = () => reject(new Error("讀取檔案失敗"));
-    reader.readAsDataURL(sourceFile);
+    reader.onerror = () => reject(new Error("READ_FAILED"));
+    reader.readAsDataURL(source);
   });
+}
+
+// 壓縮圖片，避免佔用太多儲存空間。
+// 先直接嘗試解碼；如果失敗（常見於 iPhone 的 HEIC 格式），
+// 自動改用 heic2any 轉成 JPEG 後再重試一次。
+export async function compressImage(
+  file: File,
+  maxWidth = 900,
+  quality = 0.7
+): Promise<string> {
+  try {
+    return await tryDecodeAndCompress(file, maxWidth, quality);
+  } catch {
+    try {
+      const heic2any = (await import("heic2any")).default;
+      const converted = await heic2any({
+        blob: file,
+        toType: "image/jpeg",
+        quality: 0.8,
+      });
+      const jpegBlob = Array.isArray(converted) ? converted[0] : converted;
+      return await tryDecodeAndCompress(jpegBlob, maxWidth, quality);
+    } catch {
+      throw new Error(
+        "這張照片無法處理，可能是不支援的格式，請改用 iPhone「編輯」功能另存一份，或截圖後再上傳"
+      );
+    }
+  }
 }
 
 const PROFILE_KEY = "travelDiaryProfile";
