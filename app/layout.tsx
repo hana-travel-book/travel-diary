@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Fraunces, Plus_Jakarta_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { TripProvider } from "./lib/tripContext";
+import PasswordGate from "./components/PasswordGate";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -57,7 +58,9 @@ export default function RootLayout({
       className={`${fraunces.variable} ${jakarta.variable} ${plexMono.variable} antialiased`}
     >
       <body className="bg-[#F7F3EC] font-sans">
-        <TripProvider>{children}</TripProvider>
+        <TripProvider>
+          <PasswordGate>{children}</PasswordGate>
+        </TripProvider>
       </body>
     </html>
   );
