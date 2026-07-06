@@ -18,10 +18,10 @@ function createDb() {
     return getFirestore(app);
   }
 
-  // Safari 對 Firestore 預設的串流連線方式有相容性問題，
-  // 改用長輪詢模式避免連線被瀏覽器的安全機制擋下
+  // Safari 的 Intelligent Tracking Prevention（智慧型追蹤預防）
+  // 會擋掉 Firestore 預設的串流連線，強制改用長輪詢模式來繞過這個限制
   return initializeFirestore(app, {
-    experimentalAutoDetectLongPolling: true,
+    experimentalForceLongPolling: true,
   });
 }
 
