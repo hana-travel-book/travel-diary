@@ -1,24 +1,14 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Pencil, Trash2, X, ChevronLeft, ChevronRight, Camera, Users } from "lucide-react";
+import { Pencil, Trash2, X, ChevronLeft, ChevronRight } from "lucide-react";
 import BottomNav from "../components/BottomNav";
 import TripSwitcher from "../components/TripSwitcher";
 import { trip } from "../data/trip";
-import { getAllPhotos, removePhoto, getQuote, saveQuote, compressImage } from "../lib/photos";
+import { getAllPhotos, removePhoto, getQuote, saveQuote } from "../lib/photos";
 import type { TripPhoto } from "../lib/photos";
 import { useTripContext } from "../lib/tripContext";
-import { subscribeToPhotos, addSharedPhoto, deleteSharedPhoto } from "../lib/sharedPhotos";
-import type { SharedPhoto } from "../lib/sharedPhotos";
-
-interface DisplayPhoto {
-  id: string;
-  day: number;
-  itemTitle: string;
-  dataUrl: string;
-  isShared: boolean;
-}
 
 export default function MemoriesPage() {
   const { currentTripId } = useTripContext();
@@ -28,23 +18,13 @@ export default function MemoriesPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(quote);
 
-  const [localPhotosByDay, setLocalPhotosByDay] = useState<Record<number, TripPhoto[]>>({});
-  const [sharedPhotos, setSharedPhotos] = useState<SharedPhoto[]>([]);
-
+  const [photosByDay, setPhotosByDay] = useState<Record<number, TripPhoto[]>>({});
   const [lightbox, setLightbox] = useState<{ day: number; index: number } | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [uploadTargetDay, setUploadTargetDay] = useState<number | null>(null);
-  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (!currentTripId) return;
-    setLocalPhotosByDay(getAllPhotos(currentTripId));
+    setPhotosByDay(getAllPhotos(currentTripId));
     setQuote(getQuote(currentTripId, memories.quote));
-
-    const unsubscribe = subscribeToPhotos(currentTripId, (photos) => {
-      setSharedPhotos(photos);
-    });
-    return unsubscribe;
   }, [currentTripId]);
 
   function handleSaveQuote() {
@@ -53,30 +33,12 @@ export default function MemoriesPage() {
     setIsEditing(false);
   }
 
-  // 把本機照片跟共享照片合併成同一份清單顯示（依日期分組）
-  const photosByDay: Record<number, DisplayPhoto[]> = {};
-  Object.entries(localPhotosByDay).forEach(([day, list]) => {
-    const d = Number(day);
-    photosByDay[d] = list.map((p) => ({ ...p, isShared: false }));
-  });
-  sharedPhotos.forEach((p) => {
-    if (!photosByDay[p.day]) photosByDay[p.day] = [];
-    photosByDay[p.day].push({ ...p, isShared: true });
-  });
-  Object.keys(photosByDay).forEach((day) => {
-    photosByDay[Number(day)].sort((a, b) => a.itemTitle.localeCompare(b.itemTitle));
-  });
-
-  function deletePhoto(photo: DisplayPhoto) {
-    if (photo.isShared) {
-      deleteSharedPhoto(photo.id);
-    } else {
-      removePhoto(currentTripId, photo.day, photo.id);
-      setLocalPhotosByDay((prev) => ({
-        ...prev,
-        [photo.day]: (prev[photo.day] ?? []).filter((p) => p.id !== photo.id),
-      }));
-    }
+  function deletePhoto(photo: TripPhoto) {
+    removePhoto(currentTripId, photo.day, photo.id);
+    setPhotosByDay((prev) => ({
+      ...prev,
+      [photo.day]: (prev[photo.day] ?? []).filter((p) => p.id !== photo.id),
+    }));
     setLightbox(null);
   }
 
@@ -118,48 +80,8 @@ export default function MemoriesPage() {
 
   const lightboxPhoto = lightbox ? (photosByDay[lightbox.day] ?? [])[lightbox.index] : null;
 
-  function triggerShareUpload(day: number) {
-    setUploadTargetDay(day);
-    fileInputRef.current?.click();
-  }
-
-  async function handleShareUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file || uploadTargetDay === null) return;
-    setUploading(true);
-    try {
-      const dataUrl = await compressImage(file, 900, 0.7);
-      await addSharedPhoto({
-        tripId: currentTripId,
-        day: uploadTargetDay,
-        itemTitle: "共享回憶",
-        dataUrl,
-        addedAt: Date.now(),
-      });
-    } catch (err) {
-      console.error("共享照片上傳失敗詳細原因:", err);
-      alert(
-        err instanceof Error
-          ? err.message
-          : "上傳失敗，請確認網路連線後再試一次"
-      );
-    } finally {
-      setUploading(false);
-      e.target.value = "";
-      setUploadTargetDay(null);
-    }
-  }
-
   return (
     <main className="mx-auto max-w-[430px] px-5 pb-[120px] pt-8">
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleShareUpload}
-        className="hidden"
-      />
-
       <TripSwitcher />
       <h1 className="mt-4 font-serif text-[1.9rem] font-medium text-[#2B2A28]">
         回憶時間軸
@@ -255,16 +177,6 @@ export default function MemoriesPage() {
                 </div>
 
                 <div className="flex gap-2 overflow-x-auto pb-1">
-                  <button
-                    onClick={() => triggerShareUpload(day)}
-                    disabled={uploading}
-                    aria-label="分享照片給同行者"
-                    className="flex h-24 w-24 flex-shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] border-2 border-dashed border-[#D8D2C2] text-[#9C9488]"
-                  >
-                    <Users className="h-5 w-5" strokeWidth={1.8} />
-                    <span className="text-[11px]">共享照片</span>
-                  </button>
-
                   {dayPhotos.map((p, photoIdx) => (
                     <button
                       key={p.id}
@@ -276,11 +188,6 @@ export default function MemoriesPage() {
                         alt={p.itemTitle}
                         className="h-24 w-24 rounded-[14px] object-cover"
                       />
-                      {p.isShared && (
-                        <span className="absolute left-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#34495E]/85 text-white">
-                          <Users className="h-2.5 w-2.5" strokeWidth={2.2} />
-                        </span>
-                      )}
                     </button>
                   ))}
                 </div>
@@ -308,9 +215,6 @@ export default function MemoriesPage() {
                 </p>
                 <p className="text-[15px] font-medium text-white">
                   {lightboxPhoto.itemTitle}
-                  {lightboxPhoto.isShared && (
-                    <span className="ml-2 text-[12px] text-white/60">同行者分享</span>
-                  )}
                 </p>
               </div>
               <button
