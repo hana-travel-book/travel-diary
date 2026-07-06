@@ -136,9 +136,11 @@ export default function MemoriesPage() {
         dataUrl,
         addedAt: Date.now(),
       });
-    } catch {
+       } catch (err) {
+      console.error("共享照片上傳失敗詳細原因:", err);
       alert("上傳失敗，請確認網路連線後再試一次");
     } finally {
+
       setUploading(false);
       e.target.value = "";
       setUploadTargetDay(null);

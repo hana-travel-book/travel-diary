@@ -225,27 +225,32 @@ export default function TodayDetailPage() {
     fileInputRef.current?.click();
   }
 
-  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file || !activeUploadItem) return;
-    try {
-      const dataUrl = await compressImage(file);
-      const photo: TripPhoto = {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        day: dayNumber,
-        itemTitle: activeUploadItem,
-        dataUrl,
-        addedAt: Date.now(),
-      };
-      addPhoto(currentTripId, photo);
-      setPhotos((prev) => [...prev, photo]);
-    } catch {
+async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  const file = e.target.files?.[0];
+  if (!file || !activeUploadItem) return;
+  try {
+    const dataUrl = await compressImage(file);
+    const photo: TripPhoto = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      day: dayNumber,
+      itemTitle: activeUploadItem,
+      dataUrl,
+      addedAt: Date.now(),
+    };
+    addPhoto(currentTripId, photo);
+    setPhotos((prev) => [...prev, photo]);
+  } catch (err) {
+    console.error("照片上傳失敗詳細原因:", err);
+    if (file.type === "image/heic" || file.type === "image/heif" || /\.heic$|\.heif$/i.test(file.name)) {
+      alert("這張照片是 HEIC 格式，手機瀏覽器可能無法處理。請到「設定 > 相機 > 格式」改成「最相容」，或改用截圖/其他 App 轉檔後再上傳。");
+    } else {
       alert("照片上傳失敗，請再試一次");
-    } finally {
-      e.target.value = "";
-      setActiveUploadItem(null);
     }
+  } finally {
+    e.target.value = "";
   }
+}
+
 
   function deletePhoto(id: string) {
     removePhoto(currentTripId, dayNumber, id);
