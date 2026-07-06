@@ -52,8 +52,42 @@ export function removePhoto(tripId: string, day: number, id: string) {
   writeStore(tripId, store);
 }
 
-// 壓縮圖片，避免佔用太多儲存空間
-export function compressImage(file: File, maxWidth = 900, quality = 0.7): Promise<string> {
+// 判斷檔案是否為 HEIC/HEIF 格式（iPhone 預設拍照格式，瀏覽器 <img> 無法直接解碼）
+function isHeicFile(file: File): boolean {
+  const type = file.type.toLowerCase();
+  const name = file.name.toLowerCase();
+  return (
+    type === "image/heic" ||
+    type === "image/heif" ||
+    name.endsWith(".heic") ||
+    name.endsWith(".heif")
+  );
+}
+
+// 壓縮圖片，避免佔用太多儲存空間；HEIC 會先自動轉成 JPEG 再壓縮
+export async function compressImage(
+  file: File,
+  maxWidth = 900,
+  quality = 0.7
+): Promise<string> {
+  let sourceFile: File | Blob = file;
+
+  if (isHeicFile(file)) {
+    try {
+      const heic2any = (await import("heic2any")).default;
+      const converted = await heic2any({
+        blob: file,
+        toType: "image/jpeg",
+        quality: 0.8,
+      });
+      sourceFile = Array.isArray(converted) ? converted[0] : converted;
+    } catch (err) {
+      throw new Error(
+        "這張照片是 HEIC 格式，自動轉檔失敗，請改用 iPhone「編輯」功能另存一份，或截圖後再上傳"
+      );
+    }
+  }
+
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -64,15 +98,16 @@ export function compressImage(file: File, maxWidth = 900, quality = 0.7): Promis
         canvas.width = img.width * scale;
         canvas.height = img.height * scale;
         const ctx = canvas.getContext("2d");
-        if (!ctx) return reject("no canvas context");
+        if (!ctx) return reject(new Error("no canvas context"));
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         resolve(canvas.toDataURL("image/jpeg", quality));
       };
-      img.onerror = () => reject(new Error("圖片解碼失敗，可能是不支援的照片格式（例如 HEIC）"));
+      img.onerror = () =>
+        reject(new Error("圖片解碼失敗，可能是不支援的照片格式"));
       img.src = e.target?.result as string;
     };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+    reader.onerror = () => reject(new Error("讀取檔案失敗"));
+    reader.readAsDataURL(sourceFile);
   });
 }
 
