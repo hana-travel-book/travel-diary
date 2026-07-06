@@ -136,16 +136,19 @@ export default function MemoriesPage() {
         dataUrl,
         addedAt: Date.now(),
       });
-      } catch (err) {
-  console.error("共享照片上傳失敗詳細原因:", err);
-  const isHeic = file.type === "image/heic" || file.type === "image/heif" || /\.heic$|\.heif$/i.test(file.name);
-  if (isHeic) {
-    alert("這張照片是 HEIC 格式，瀏覽器無法處理。請到 iPhone「設定 > 相機 > 格式」改成「最相容」，或改用截圖後再上傳。");
-  } else {
-    alert("上傳失敗，請確認網路連線後再試一次");
+    } catch (err) {
+      console.error("共享照片上傳失敗詳細原因:", err);
+      alert(
+        err instanceof Error
+          ? err.message
+          : "上傳失敗，請確認網路連線後再試一次"
+      );
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+      setUploadTargetDay(null);
+    }
   }
-}
-
 
   return (
     <main className="mx-auto max-w-[430px] px-5 pb-[120px] pt-8">
