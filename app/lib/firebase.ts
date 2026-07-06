@@ -1,7 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore, getFirestore } from "firebase/firestore";
 
-// 觸發重新部署，確保 Vercel 環境變數生效
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -11,5 +10,19 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+function createDb() {
+  const alreadyInitialized = getApps().length > 0;
+  const app = alreadyInitialized ? getApp() : initializeApp(firebaseConfig);
+
+  if (alreadyInitialized) {
+    return getFirestore(app);
+  }
+
+  // Safari 對 Firestore 預設的串流連線方式有相容性問題，
+  // 改用長輪詢模式避免連線被瀏覽器的安全機制擋下
+  return initializeFirestore(app, {
+    experimentalAutoDetectLongPolling: true,
+  });
+}
+
+export const db = createDb();
