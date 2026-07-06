@@ -68,7 +68,7 @@ export function compressImage(file: File, maxWidth = 900, quality = 0.7): Promis
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         resolve(canvas.toDataURL("image/jpeg", quality));
       };
-      img.onerror = reject;
+      img.onerror = () => reject(new Error("圖片解碼失敗，可能是不支援的照片格式（例如 HEIC）"));
       img.src = e.target?.result as string;
     };
     reader.onerror = reject;
