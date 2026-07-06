@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Camera, Wallet, CheckSquare, X } from "lucide-react";
 import { trip } from "../data/trip";
 import { addPhoto, compressImage } from "../lib/photos";
+import { useTripContext } from "../lib/tripContext";
 
 function getCurrentDayNumber(): number {
   const start = new Date(`${trip.start}T00:00:00`);
@@ -23,6 +24,7 @@ export default function AddSheet({
   onClose: () => void;
 }) {
   const router = useRouter();
+  const { currentTripId } = useTripContext();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const currentDay = getCurrentDayNumber();
 
@@ -31,7 +33,7 @@ export default function AddSheet({
     if (!file) return;
     try {
       const dataUrl = await compressImage(file);
-      addPhoto({
+      addPhoto(currentTripId, {
         id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
         day: currentDay,
         itemTitle: "快速新增",
@@ -60,7 +62,7 @@ export default function AddSheet({
       color: "#A9BFA0",
       onClick: () => {
         onClose();
-        router.push(`/today/${currentDay}`);
+        router.push(`/today/${currentDay}?addExpense=1`);
       },
     },
     {

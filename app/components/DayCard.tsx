@@ -7,21 +7,24 @@ import { ChevronRight, MapPin, Camera } from "lucide-react";
 import type { JourneyDay } from "../data/trip";
 import { mapLink } from "../data/trip";
 import { getDayCover, saveDayCover, compressImage } from "../lib/dayCover";
+import { useTripContext } from "../lib/tripContext";
 
 export default function DayCard({ day, i }: { day: JourneyDay; i: number }) {
+  const { currentTripId } = useTripContext();
   const [coverImage, setCoverImage] = useState(day.image);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    setCoverImage(getDayCover(day.day, day.image));
-  }, [day.day, day.image]);
+    if (!currentTripId) return;
+    setCoverImage(getDayCover(currentTripId, day.day, day.image));
+  }, [day.day, day.image, currentTripId]);
 
   async function handleChangePhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
       const dataUrl = await compressImage(file, 600, 0.75);
-      saveDayCover(day.day, dataUrl);
+      saveDayCover(currentTripId, day.day, dataUrl);
       setCoverImage(dataUrl);
     } catch {
       alert("照片上傳失敗，請再試一次");

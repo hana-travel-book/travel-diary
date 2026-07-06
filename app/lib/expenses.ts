@@ -9,7 +9,9 @@ export interface ExpenseItem {
   addedAt: number;
 }
 
-const STORAGE_KEY = "travelDiaryExpenses";
+function storageKey(tripId: string) {
+  return `travelDiaryExpenses_${tripId}`;
+}
 
 type ExpenseStore = Record<number, ExpenseItem[]>;
 
@@ -23,10 +25,10 @@ function isValidExpense(e: unknown): e is ExpenseItem {
   );
 }
 
-function readStore(): ExpenseStore {
+function readStore(tripId: string): ExpenseStore {
   if (typeof window === "undefined") return {};
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey(tripId));
     const parsed = raw ? JSON.parse(raw) : {};
     const cleaned: ExpenseStore = {};
     for (const key of Object.keys(parsed)) {
@@ -40,36 +42,36 @@ function readStore(): ExpenseStore {
   }
 }
 
-function writeStore(store: ExpenseStore) {
+function writeStore(tripId: string, store: ExpenseStore) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+    localStorage.setItem(storageKey(tripId), JSON.stringify(store));
   } catch {
     alert("儲存失敗，請再試一次");
   }
 }
 
-export function getAllExpenses(): ExpenseStore {
-  return readStore();
+export function getAllExpenses(tripId: string): ExpenseStore {
+  return readStore(tripId);
 }
 
-export function getExpensesForDay(day: number): ExpenseItem[] {
-  return readStore()[day] ?? [];
+export function getExpensesForDay(tripId: string, day: number): ExpenseItem[] {
+  return readStore(tripId)[day] ?? [];
 }
 
-export function getDayTotal(day: number): number {
-  return getExpensesForDay(day).reduce((sum, e) => sum + e.amount, 0);
+export function getDayTotal(tripId: string, day: number): number {
+  return getExpensesForDay(tripId, day).reduce((sum, e) => sum + e.amount, 0);
 }
 
-export function getTripTotal(): number {
-  const store = readStore();
+export function getTripTotal(tripId: string): number {
+  const store = readStore(tripId);
   return Object.values(store)
     .flat()
     .reduce((sum, e) => sum + e.amount, 0);
 }
 
-export function getTripTotalByMethod(): Record<PaymentMethod, number> {
-  const store = readStore();
+export function getTripTotalByMethod(tripId: string): Record<PaymentMethod, number> {
+  const store = readStore(tripId);
   const all = Object.values(store).flat();
   return {
     cash: all.filter((e) => e.method === "cash").reduce((sum, e) => sum + e.amount, 0),
@@ -77,22 +79,27 @@ export function getTripTotalByMethod(): Record<PaymentMethod, number> {
   };
 }
 
-export function addExpense(expense: ExpenseItem) {
-  const store = readStore();
+export function addExpense(tripId: string, expense: ExpenseItem) {
+  const store = readStore(tripId);
   const list = store[expense.day] ?? [];
   store[expense.day] = [...list, expense];
-  writeStore(store);
+  writeStore(tripId, store);
 }
 
-export function updateExpense(day: number, id: string, updates: Partial<Omit<ExpenseItem, "id" | "day">>) {
-  const store = readStore();
+export function updateExpense(
+  tripId: string,
+  day: number,
+  id: string,
+  updates: Partial<Omit<ExpenseItem, "id" | "day">>
+) {
+  const store = readStore(tripId);
   const list = store[day] ?? [];
   store[day] = list.map((e) => (e.id === id ? { ...e, ...updates } : e));
-  writeStore(store);
+  writeStore(tripId, store);
 }
 
-export function removeExpense(day: number, id: string) {
-  const store = readStore();
+export function removeExpense(tripId: string, day: number, id: string) {
+  const store = readStore(tripId);
   store[day] = (store[day] ?? []).filter((e) => e.id !== id);
-  writeStore(store);
+  writeStore(tripId, store);
 }

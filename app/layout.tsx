@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Plus_Jakarta_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
+import { TripProvider } from "./lib/tripContext";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -55,7 +56,9 @@ export default function RootLayout({
       lang="zh-Hant"
       className={`${fraunces.variable} ${jakarta.variable} ${plexMono.variable} antialiased`}
     >
-      <body className="bg-[#F7F3EC] font-sans">{children}</body>
+      <body className="bg-[#F7F3EC] font-sans">
+        <TripProvider>{children}</TripProvider>
+      </body>
     </html>
   );
 }

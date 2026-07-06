@@ -1,48 +1,46 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { ChevronDown, Check, MapPin, Plus, X, Trash2 } from "lucide-react";
-import { tripsList } from "../data/trips-list";
+import { useState } from "react";
+import { ChevronDown, Check, MapPin, Plus, Trash2 } from "lucide-react";
 import { getCustomTrips, addCustomTrip, removeCustomTrip } from "../lib/trips";
-import type { CustomTrip } from "../lib/trips";
+import { useTripContext } from "../lib/tripContext";
 
 export default function TripSwitcher() {
+  const { currentTripId, setCurrentTripId, allTrips, refreshTrips } = useTripContext();
   const [isOpen, setIsOpen] = useState(false);
-  const [customTrips, setCustomTrips] = useState<CustomTrip[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDateRange, setNewDateRange] = useState("");
+  const [newEndDate, setNewEndDate] = useState("");
 
-  const allTrips = [...tripsList, ...customTrips];
-  const [selectedId, setSelectedId] = useState(
-    tripsList.find((t) => t.isCurrent)?.id ?? tripsList[0]?.id
-  );
-
-  useEffect(() => {
-    setCustomTrips(getCustomTrips());
-  }, []);
-
-  const selected = allTrips.find((t) => t.id === selectedId) ?? allTrips[0];
+  const selected = allTrips.find((t) => t.id === currentTripId) ?? allTrips[0];
 
   function handleAdd() {
     if (!newTitle.trim()) return;
     const created = addCustomTrip({
       title: newTitle.trim(),
       dateRangeLabel: newDateRange.trim() || "日期未定",
+      endDateISO: newEndDate,
     });
-    setCustomTrips((prev) => [...prev, created]);
+    refreshTrips();
+    setCurrentTripId(created.id);
     setNewTitle("");
     setNewDateRange("");
+    setNewEndDate("");
     setIsAdding(false);
+    setIsOpen(false);
   }
 
   function handleRemove(id: string) {
     removeCustomTrip(id);
-    setCustomTrips((prev) => prev.filter((t) => t.id !== id));
-    if (selectedId === id) {
-      setSelectedId(tripsList.find((t) => t.isCurrent)?.id ?? tripsList[0]?.id);
+    refreshTrips();
+    if (currentTripId === id) {
+      const fallback = allTrips.find((t) => t.id !== id);
+      if (fallback) setCurrentTripId(fallback.id);
     }
   }
+
+  const customIds = new Set(getCustomTrips().map((t) => t.id));
 
   return (
     <div className="relative">
@@ -61,14 +59,14 @@ export default function TripSwitcher() {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute left-0 top-full z-50 mt-2 w-[260px] rounded-[16px] bg-white p-1.5 shadow-[0_20px_50px_-15px_rgba(43,42,40,0.3)]">
+          <div className="absolute left-0 top-full z-50 mt-2 w-[280px] rounded-[16px] bg-white p-1.5 shadow-[0_20px_50px_-15px_rgba(43,42,40,0.3)]">
             {allTrips.map((t) => {
-              const isCustom = customTrips.some((c) => c.id === t.id);
+              const isCustom = customIds.has(t.id);
               return (
                 <div key={t.id} className="flex items-center">
                   <button
                     onClick={() => {
-                      setSelectedId(t.id);
+                      setCurrentTripId(t.id);
                       setIsOpen(false);
                     }}
                     className="flex flex-1 items-center justify-between rounded-[12px] px-3 py-2.5 text-left hover:bg-[#F7F3EC]"
@@ -77,7 +75,7 @@ export default function TripSwitcher() {
                       <p className="text-[14px] font-medium text-[#2B2A28]">{t.title}</p>
                       <p className="text-[11px] text-[#9C9488]">{t.dateRangeLabel}</p>
                     </div>
-                    {t.id === selectedId && (
+                    {t.id === currentTripId && (
                       <Check className="h-4 w-4 text-[#A9BFA0]" strokeWidth={2.5} />
                     )}
                   </button>
@@ -109,6 +107,13 @@ export default function TripSwitcher() {
                     placeholder="日期範圍（例如 1 Apr – 10 Apr）"
                     value={newDateRange}
                     onChange={(e) => setNewDateRange(e.target.value)}
+                    className="mb-1.5 w-full rounded-[8px] border border-[#ECE6DA] px-2.5 py-1.5 text-[13px] text-[#2B2A28] outline-none focus:border-[#A9BFA0]"
+                  />
+                  <p className="mb-1 text-[11px] text-[#9C9488]">旅程結束日期（用於自動鎖定）</p>
+                  <input
+                    type="date"
+                    value={newEndDate}
+                    onChange={(e) => setNewEndDate(e.target.value)}
                     className="mb-1.5 w-full rounded-[8px] border border-[#ECE6DA] px-2.5 py-1.5 text-[13px] text-[#2B2A28] outline-none focus:border-[#A9BFA0]"
                   />
                   <div className="flex gap-1.5">

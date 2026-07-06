@@ -6,48 +6,50 @@ export interface TripPhoto {
   addedAt: number;
 }
 
-const STORAGE_KEY = "travelDiaryPhotos";
+function storageKey(tripId: string) {
+  return `travelDiaryPhotos_${tripId}`;
+}
 
 type PhotoStore = Record<number, TripPhoto[]>;
 
-function readStore(): PhotoStore {
+function readStore(tripId: string): PhotoStore {
   if (typeof window === "undefined") return {};
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey(tripId));
     return raw ? JSON.parse(raw) : {};
   } catch {
     return {};
   }
 }
 
-function writeStore(store: PhotoStore) {
+function writeStore(tripId: string, store: PhotoStore) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+    localStorage.setItem(storageKey(tripId), JSON.stringify(store));
   } catch {
     alert("儲存空間快滿了，建議刪除一些舊照片後再試一次");
   }
 }
 
-export function getAllPhotos(): PhotoStore {
-  return readStore();
+export function getAllPhotos(tripId: string): PhotoStore {
+  return readStore(tripId);
 }
 
-export function getPhotosForDay(day: number): TripPhoto[] {
-  return readStore()[day] ?? [];
+export function getPhotosForDay(tripId: string, day: number): TripPhoto[] {
+  return readStore(tripId)[day] ?? [];
 }
 
-export function addPhoto(photo: TripPhoto) {
-  const store = readStore();
+export function addPhoto(tripId: string, photo: TripPhoto) {
+  const store = readStore(tripId);
   const list = store[photo.day] ?? [];
   store[photo.day] = [...list, photo];
-  writeStore(store);
+  writeStore(tripId, store);
 }
 
-export function removePhoto(day: number, id: string) {
-  const store = readStore();
+export function removePhoto(tripId: string, day: number, id: string) {
+  const store = readStore(tripId);
   store[day] = (store[day] ?? []).filter((p) => p.id !== id);
-  writeStore(store);
+  writeStore(tripId, store);
 }
 
 // 壓縮圖片，避免佔用太多儲存空間
@@ -101,22 +103,24 @@ export function saveProfile(profile: ProfileData) {
   }
 }
 
-const QUOTE_KEY = "travelDiaryQuote";
+function quoteKey(tripId: string) {
+  return `travelDiaryQuote_${tripId}`;
+}
 
-export function getQuote(fallback: string): string {
+export function getQuote(tripId: string, fallback: string): string {
   if (typeof window === "undefined") return fallback;
   try {
-    const raw = localStorage.getItem(QUOTE_KEY);
+    const raw = localStorage.getItem(quoteKey(tripId));
     return raw ?? fallback;
   } catch {
     return fallback;
   }
 }
 
-export function saveQuote(quote: string) {
+export function saveQuote(tripId: string, quote: string) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(QUOTE_KEY, quote);
+    localStorage.setItem(quoteKey(tripId), quote);
   } catch {
     alert("儲存失敗，請再試一次");
   }

@@ -14,11 +14,13 @@ import type { TripPhoto } from "../../lib/photos";
 import { getTasksForDay, saveTasksForDay } from "../../lib/dayData";
 import { getExpensesForDay, addExpense, updateExpense, removeExpense } from "../../lib/expenses";
 import type { ExpenseItem, PaymentMethod } from "../../lib/expenses";
+import { useTripContext } from "../../lib/tripContext";
 
 export default function TodayDetailPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { currentTripId } = useTripContext();
   const dayNumber = Number(params.day);
   const detail = trip.dayDetails[dayNumber];
 
@@ -55,11 +57,11 @@ export default function TodayDetailPage() {
   const expenseTotal = expenses.reduce((sum, e) => sum + e.amount, 0);
 
   useEffect(() => {
-    if (!dayNumber || !detail) return;
-    setPhotos(getPhotosForDay(dayNumber));
-    setTasks(getTasksForDay(dayNumber, detail.tasks ?? []));
-    setExpenses(getExpensesForDay(dayNumber));
-  }, [dayNumber]);
+    if (!dayNumber || !detail || !currentTripId) return;
+    setPhotos(getPhotosForDay(currentTripId, dayNumber));
+    setTasks(getTasksForDay(currentTripId, dayNumber, detail.tasks ?? []));
+    setExpenses(getExpensesForDay(currentTripId, dayNumber));
+  }, [dayNumber, currentTripId]);
 
   useEffect(() => {
     if (searchParams.get("addTask") === "1") {
@@ -94,7 +96,7 @@ export default function TodayDetailPage() {
   function toggle(id: string) {
     const updated = tasks.map((t) => (t.id === id ? { ...t, done: !t.done } : t));
     setTasks(updated);
-    saveTasksForDay(dayNumber, updated);
+    saveTasksForDay(currentTripId, dayNumber, updated);
   }
 
   function addTask() {
@@ -106,7 +108,7 @@ export default function TodayDetailPage() {
     };
     const updated = [...tasks, item];
     setTasks(updated);
-    saveTasksForDay(dayNumber, updated);
+    saveTasksForDay(currentTripId, dayNumber, updated);
     setNewTaskLabel("");
     setIsAddingTask(false);
   }
@@ -114,7 +116,7 @@ export default function TodayDetailPage() {
   function deleteTask(id: string) {
     const updated = tasks.filter((t) => t.id !== id);
     setTasks(updated);
-    saveTasksForDay(dayNumber, updated);
+    saveTasksForDay(currentTripId, dayNumber, updated);
   }
 
   function openAddExpense() {
@@ -146,7 +148,7 @@ export default function TodayDetailPage() {
     if (!amount || amount <= 0) return;
 
     if (editingExpenseId) {
-      updateExpense(dayNumber, editingExpenseId, {
+      updateExpense(currentTripId, dayNumber, editingExpenseId, {
         amount,
         note: expenseNote.trim(),
         method: expenseMethod,
@@ -167,14 +169,14 @@ export default function TodayDetailPage() {
         method: expenseMethod,
         addedAt: Date.now(),
       };
-      addExpense(expense);
+      addExpense(currentTripId, expense);
       setExpenses((prev) => [...prev, expense]);
     }
     closeExpenseForm();
   }
 
   function deleteExpense(id: string) {
-    removeExpense(dayNumber, id);
+    removeExpense(currentTripId, dayNumber, id);
     setExpenses((prev) => prev.filter((e) => e.id !== id));
     if (editingExpenseId === id) closeExpenseForm();
   }
@@ -235,7 +237,7 @@ export default function TodayDetailPage() {
         dataUrl,
         addedAt: Date.now(),
       };
-      addPhoto(photo);
+      addPhoto(currentTripId, photo);
       setPhotos((prev) => [...prev, photo]);
     } catch {
       alert("照片上傳失敗，請再試一次");
@@ -246,7 +248,7 @@ export default function TodayDetailPage() {
   }
 
   function deletePhoto(id: string) {
-    removePhoto(dayNumber, id);
+    removePhoto(currentTripId, dayNumber, id);
     setPhotos((prev) => prev.filter((p) => p.id !== id));
   }
 

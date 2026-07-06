@@ -3,6 +3,9 @@
 import { useState, useEffect, useRef } from "react";
 import {
   ChevronRight,
+  Settings,
+  Bell,
+  Globe,
   Download,
   Info,
   LogOut,
@@ -12,7 +15,6 @@ import {
   Pencil,
   Camera,
 } from "lucide-react";
-
 import BottomNav from "../components/BottomNav";
 import CurrencyConverter from "../components/CurrencyConverter";
 import Link from "next/link";
@@ -21,6 +23,7 @@ import { user, trip } from "../data/trip";
 import { getTripTotal, getTripTotalByMethod } from "../lib/expenses";
 import { compressImage, getProfile, saveProfile } from "../lib/photos";
 import type { ProfileData } from "../lib/photos";
+import { useTripContext } from "../lib/tripContext";
 
 const menuItems = [
   { icon: Download, label: "匯出資料" },
@@ -28,6 +31,7 @@ const menuItems = [
 ];
 
 export default function MePage() {
+  const { currentTripId } = useTripContext();
   const [tripTotal, setTripTotal] = useState(0);
   const [byMethod, setByMethod] = useState({ cash: 0, card: 0 });
 
@@ -40,10 +44,11 @@ export default function MePage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    setTripTotal(getTripTotal());
-    setByMethod(getTripTotalByMethod());
+    if (!currentTripId) return;
+    setTripTotal(getTripTotal(currentTripId));
+    setByMethod(getTripTotalByMethod(currentTripId));
     setProfile(getProfile(defaultProfile));
-  }, []);
+  }, [currentTripId]);
 
   function startEdit() {
     setDraftName(profile.name);
@@ -201,7 +206,7 @@ export default function MePage() {
         </div>
       </section>
 
-            <CurrencyConverter />
+      <CurrencyConverter />
 
       <Link
         href="/emergency"
@@ -213,7 +218,6 @@ export default function MePage() {
       </Link>
 
       {/* Menu */}
-
       <section className="mt-4 rounded-[28px] bg-white shadow-[0_20px_50px_-30px_rgba(43,42,40,0.35)]">
         {menuItems.map(({ icon: Icon, label }) => (
           <button

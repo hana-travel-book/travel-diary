@@ -4,6 +4,7 @@ export interface TripSummary {
   id: string;
   title: string;
   dateRangeLabel: string;
+  endDateISO: string;
   isCurrent: boolean;
 }
 
@@ -13,6 +14,7 @@ export const tripsList: TripSummary[] = [
     id: "thailand-2026",
     title: trip.title,
     dateRangeLabel: trip.dateRangeLabel,
+    endDateISO: trip.end,
     isCurrent: true,
   },
 ];

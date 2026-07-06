@@ -8,8 +8,10 @@ import TripSwitcher from "../components/TripSwitcher";
 import { trip } from "../data/trip";
 import { getAllPhotos, removePhoto, getQuote, saveQuote } from "../lib/photos";
 import type { TripPhoto } from "../lib/photos";
+import { useTripContext } from "../lib/tripContext";
 
 export default function MemoriesPage() {
+  const { currentTripId } = useTripContext();
   const { memories, dayDetails, journeyDays } = trip;
 
   const [quote, setQuote] = useState(memories.quote);
@@ -21,18 +23,19 @@ export default function MemoriesPage() {
   const [lightbox, setLightbox] = useState<{ day: number; index: number } | null>(null);
 
   useEffect(() => {
-    setPhotosByDay(getAllPhotos());
-    setQuote(getQuote(memories.quote));
-  }, []);
+    if (!currentTripId) return;
+    setPhotosByDay(getAllPhotos(currentTripId));
+    setQuote(getQuote(currentTripId, memories.quote));
+  }, [currentTripId]);
 
   function handleSaveQuote() {
     setQuote(draft);
-    saveQuote(draft);
+    saveQuote(currentTripId, draft);
     setIsEditing(false);
   }
 
   function deletePhoto(day: number, id: string) {
-    removePhoto(day, id);
+    removePhoto(currentTripId, day, id);
     setPhotosByDay((prev) => ({
       ...prev,
       [day]: (prev[day] ?? []).filter((p) => p.id !== id),
