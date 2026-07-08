@@ -193,6 +193,13 @@ export default function TodayDetailPage() {
     if (editingExpenseId === id) closeExpenseForm();
   }
 
+  function syncTimeline(updated: TimelineItem[]) {
+    saveTimelineForDay(currentTripId, dayNumber, updated).catch((err) => {
+      console.error("時間軸同步失敗:", err);
+      alert("儲存失敗，請確認網路連線後再試一次");
+    });
+  }
+
   function addTimelineItem() {
     if (!newTitle.trim()) return;
     const item: TimelineItem = {
@@ -204,10 +211,7 @@ export default function TodayDetailPage() {
     };
     const updated = [...timeline, item].sort((a, b) => a.time.localeCompare(b.time));
     setTimeline(updated);
-    saveTimelineForDay(currentTripId, dayNumber, updated).catch((err) => {
-      console.error("時間軸同步失敗:", err);
-      alert("儲存失敗，請確認網路連線後再試一次");
-    });
+    syncTimeline(updated);
     setNewTime("");
     setNewTitle("");
     setNewAddress("");
@@ -238,11 +242,15 @@ export default function TodayDetailPage() {
     };
     updated.sort((a, b) => a.time.localeCompare(b.time));
     setTimeline(updated);
-    saveTimelineForDay(currentTripId, dayNumber, updated).catch((err) => {
-      console.error("時間軸同步失敗:", err);
-      alert("儲存失敗，請確認網路連線後再試一次");
-    });
+    syncTimeline(updated);
     setEditingIndex(null);
+  }
+
+  function deleteTimelineItem(i: number) {
+    const updated = timeline.filter((_, idx) => idx !== i);
+    setTimeline(updated);
+    syncTimeline(updated);
+    if (editingIndex === i) setEditingIndex(null);
   }
 
   function triggerUpload(itemTitle: string) {
@@ -430,6 +438,13 @@ export default function TodayDetailPage() {
                 />
                 <div className="flex gap-2">
                   <button
+                    onClick={() => deleteTimelineItem(i)}
+                    aria-label="刪除行程"
+                    className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] bg-[#F7F3EC] text-[#C0453A]"
+                  >
+                    <Trash2 className="h-4 w-4" strokeWidth={1.9} />
+                  </button>
+                  <button
                     onClick={() => setEditingIndex(null)}
                     className="flex-1 rounded-[10px] py-2 text-[14px] font-medium text-[#9C9488]"
                   >
@@ -485,6 +500,13 @@ export default function TodayDetailPage() {
                   >
                     <MapPin className="h-3.5 w-3.5" strokeWidth={1.9} />
                   </a>
+                  <button
+                    onClick={() => deleteTimelineItem(i)}
+                    aria-label="刪除行程"
+                    className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-[#F7F3EC] text-[#9C9488]"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" strokeWidth={1.9} />
+                  </button>
                 </div>
 
                 {itemPhotos.length > 0 && (
