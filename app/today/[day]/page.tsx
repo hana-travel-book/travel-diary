@@ -11,8 +11,8 @@ import { trip, mapLink } from "../../data/trip";
 import type { TimelineItem, TaskItem } from "../../data/trip";
 import { addPhoto, compressImage, getPhotosForDay, removePhoto } from "../../lib/photos";
 import type { TripPhoto } from "../../lib/photos";
-import { getTasksForDay, saveTasksForDay } from "../../lib/dayData";
 import { subscribeToTasks, saveTasksSynced } from "../../lib/tripTasks";
+import { getExpensesForDay, addExpense, updateExpense, removeExpense } from "../../lib/expenses";
 import type { ExpenseItem, PaymentMethod } from "../../lib/expenses";
 import { subscribeToTimeline, saveTimelineForDay } from "../../lib/tripTimeline";
 import { useTripContext } from "../../lib/tripContext";
@@ -85,7 +85,6 @@ export default function TodayDetailPage() {
       unsubscribeTasks();
     };
   }, [dayNumber, currentTripId]);
-
 
   useEffect(() => {
     if (searchParams.get("addTask") === "1") {
@@ -361,7 +360,6 @@ export default function TodayDetailPage() {
         </button>
       </div>
 
-      {/* 上一天／下一天切換 */}
       <div className="mt-4 flex items-center justify-between">
         <button
           onClick={() => goToDay(dayNumber - 1)}
