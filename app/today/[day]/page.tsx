@@ -12,7 +12,7 @@ import type { TimelineItem, TaskItem } from "../../data/trip";
 import { addPhoto, compressImage, getPhotosForDay, removePhoto } from "../../lib/photos";
 import type { TripPhoto } from "../../lib/photos";
 import { getTasksForDay, saveTasksForDay } from "../../lib/dayData";
-import { getExpensesForDay, addExpense, updateExpense, removeExpense } from "../../lib/expenses";
+import { subscribeToTasks, saveTasksSynced } from "../../lib/tripTasks";
 import type { ExpenseItem, PaymentMethod } from "../../lib/expenses";
 import { subscribeToTimeline, saveTimelineForDay } from "../../lib/tripTimeline";
 import { useTripContext } from "../../lib/tripContext";
@@ -66,17 +66,26 @@ export default function TodayDetailPage() {
   useEffect(() => {
     if (!dayNumber || !detail || !currentTripId) return;
     setPhotos(getPhotosForDay(currentTripId, dayNumber));
-    setTasks(getTasksForDay(currentTripId, dayNumber, detail.tasks ?? []));
     setExpenses(getExpensesForDay(currentTripId, dayNumber));
 
-    const unsubscribe = subscribeToTimeline(
+    const unsubscribeTimeline = subscribeToTimeline(
       currentTripId,
       dayNumber,
       detail.timeline ?? [],
       (items) => setTimeline(items)
     );
-    return unsubscribe;
+    const unsubscribeTasks = subscribeToTasks(
+      currentTripId,
+      dayNumber,
+      detail.tasks ?? [],
+      (items) => setTasks(items)
+    );
+    return () => {
+      unsubscribeTimeline();
+      unsubscribeTasks();
+    };
   }, [dayNumber, currentTripId]);
+
 
   useEffect(() => {
     if (searchParams.get("addTask") === "1") {
@@ -117,7 +126,10 @@ export default function TodayDetailPage() {
   function toggle(id: string) {
     const updated = tasks.map((t) => (t.id === id ? { ...t, done: !t.done } : t));
     setTasks(updated);
-    saveTasksForDay(currentTripId, dayNumber, updated);
+    saveTasksSynced(currentTripId, dayNumber, updated).catch((err) => {
+      console.error("任務同步失敗:", err);
+      alert("儲存失敗，請確認網路連線後再試一次");
+    });
   }
 
   function addTask() {
@@ -129,7 +141,10 @@ export default function TodayDetailPage() {
     };
     const updated = [...tasks, item];
     setTasks(updated);
-    saveTasksForDay(currentTripId, dayNumber, updated);
+    saveTasksSynced(currentTripId, dayNumber, updated).catch((err) => {
+      console.error("任務同步失敗:", err);
+      alert("儲存失敗，請確認網路連線後再試一次");
+    });
     setNewTaskLabel("");
     setIsAddingTask(false);
   }
@@ -137,7 +152,10 @@ export default function TodayDetailPage() {
   function deleteTask(id: string) {
     const updated = tasks.filter((t) => t.id !== id);
     setTasks(updated);
-    saveTasksForDay(currentTripId, dayNumber, updated);
+    saveTasksSynced(currentTripId, dayNumber, updated).catch((err) => {
+      console.error("任務同步失敗:", err);
+      alert("儲存失敗，請確認網路連線後再試一次");
+    });
   }
 
   function openAddExpense() {
