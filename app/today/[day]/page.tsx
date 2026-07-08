@@ -14,6 +14,7 @@ import type { TripPhoto } from "../../lib/photos";
 import { getTasksForDay, saveTasksForDay } from "../../lib/dayData";
 import { getExpensesForDay, addExpense, updateExpense, removeExpense } from "../../lib/expenses";
 import type { ExpenseItem, PaymentMethod } from "../../lib/expenses";
+import { subscribeToTimeline, saveTimelineForDay } from "../../lib/tripTimeline";
 import { useTripContext } from "../../lib/tripContext";
 
 export default function TodayDetailPage() {
@@ -61,6 +62,15 @@ export default function TodayDetailPage() {
     setPhotos(getPhotosForDay(currentTripId, dayNumber));
     setTasks(getTasksForDay(currentTripId, dayNumber, detail.tasks ?? []));
     setExpenses(getExpensesForDay(currentTripId, dayNumber));
+
+    // 時間軸改為即時訂閱 Firebase，同行者互相同步
+    const unsubscribe = subscribeToTimeline(
+      currentTripId,
+      dayNumber,
+      detail.timeline ?? [],
+      (items) => setTimeline(items)
+    );
+    return unsubscribe;
   }, [dayNumber, currentTripId]);
 
   useEffect(() => {
@@ -191,6 +201,10 @@ export default function TodayDetailPage() {
     };
     const updated = [...timeline, item].sort((a, b) => a.time.localeCompare(b.time));
     setTimeline(updated);
+    saveTimelineForDay(currentTripId, dayNumber, updated).catch((err) => {
+      console.error("時間軸同步失敗:", err);
+      alert("儲存失敗，請確認網路連線後再試一次");
+    });
     setNewTime("");
     setNewTitle("");
     setIsAdding(false);
@@ -217,6 +231,10 @@ export default function TodayDetailPage() {
     };
     updated.sort((a, b) => a.time.localeCompare(b.time));
     setTimeline(updated);
+    saveTimelineForDay(currentTripId, dayNumber, updated).catch((err) => {
+      console.error("時間軸同步失敗:", err);
+      alert("儲存失敗，請確認網路連線後再試一次");
+    });
     setEditingIndex(null);
   }
 
@@ -225,32 +243,29 @@ export default function TodayDetailPage() {
     fileInputRef.current?.click();
   }
 
-async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-  const file = e.target.files?.[0];
-  if (!file || !activeUploadItem) return;
-  try {
-    const dataUrl = await compressImage(file);
-    const photo: TripPhoto = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      day: dayNumber,
-      itemTitle: activeUploadItem,
-      dataUrl,
-      addedAt: Date.now(),
-    };
-    addPhoto(currentTripId, photo);
-    setPhotos((prev) => [...prev, photo]);
-  } catch (err) {
-    console.error("照片上傳失敗詳細原因:", err);
-    if (file.type === "image/heic" || file.type === "image/heif" || /\.heic$|\.heif$/i.test(file.name)) {
-      alert("這張照片是 HEIC 格式，手機瀏覽器可能無法處理。請到「設定 > 相機 > 格式」改成「最相容」，或改用截圖/其他 App 轉檔後再上傳。");
-    } else {
-      alert("照片上傳失敗，請再試一次");
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !activeUploadItem) return;
+    try {
+      const dataUrl = await compressImage(file);
+      const photo: TripPhoto = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        day: dayNumber,
+        itemTitle: activeUploadItem,
+        dataUrl,
+        addedAt: Date.now(),
+      };
+      addPhoto(currentTripId, photo);
+      setPhotos((prev) => [...prev, photo]);
+    } catch (err) {
+      console.error("照片上傳失敗詳細原因:", err);
+      alert(
+        err instanceof Error ? err.message : "照片上傳失敗，請再試一次"
+      );
+    } finally {
+      e.target.value = "";
     }
-  } finally {
-    e.target.value = "";
   }
-}
-
 
   function deletePhoto(id: string) {
     removePhoto(currentTripId, dayNumber, id);
