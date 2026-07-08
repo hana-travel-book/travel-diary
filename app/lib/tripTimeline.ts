@@ -37,5 +37,12 @@ export async function saveTimelineForDay(
   items: TimelineItem[]
 ) {
   const ref = doc(db, "tripTimelines", timelineDocId(tripId, day));
-  await setDoc(ref, { tripId, day, items, updatedAt: Date.now() });
+  // Firestore 不接受 undefined 值，先用 JSON 序列化清除掉再寫入
+  const sanitizedItems = JSON.parse(JSON.stringify(items));
+  await setDoc(ref, {
+    tripId,
+    day,
+    items: sanitizedItems,
+    updatedAt: Date.now(),
+  });
 }
