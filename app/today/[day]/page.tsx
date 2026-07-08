@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { CalendarDays, Plus, Check, MapPin, X, Pencil, Camera, Trash2, Banknote, CreditCard } from "lucide-react";
+import { CalendarDays, Plus, Check, MapPin, X, Pencil, Camera, Trash2, Banknote, CreditCard, ArrowLeft } from "lucide-react";
 import BottomNav from "../../components/BottomNav";
 import TripCalendarSheet from "../../components/TripCalendarSheet";
 import WeatherBadge from "../../components/WeatherBadge";
@@ -31,6 +31,8 @@ export default function TodayDetailPage() {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [newTime, setNewTime] = useState("");
   const [newTitle, setNewTitle] = useState("");
+  const [newAddress, setNewAddress] = useState("");
+  const [newEmoji, setNewEmoji] = useState("📌");
 
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [newTaskLabel, setNewTaskLabel] = useState("");
@@ -47,6 +49,7 @@ export default function TodayDetailPage() {
   const [editTitle, setEditTitle] = useState("");
   const [editSubtitle, setEditSubtitle] = useState("");
   const [editAddress, setEditAddress] = useState("");
+  const [editEmoji, setEditEmoji] = useState("");
 
   const [photos, setPhotos] = useState<TripPhoto[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -63,7 +66,6 @@ export default function TodayDetailPage() {
     setTasks(getTasksForDay(currentTripId, dayNumber, detail.tasks ?? []));
     setExpenses(getExpensesForDay(currentTripId, dayNumber));
 
-    // 時間軸改為即時訂閱 Firebase，同行者互相同步
     const unsubscribe = subscribeToTimeline(
       currentTripId,
       dayNumber,
@@ -197,7 +199,8 @@ export default function TodayDetailPage() {
       time: newTime.trim() || "--:--",
       title: newTitle.trim(),
       subtitle: "",
-      emoji: "📌",
+      emoji: newEmoji.trim() || "📌",
+      address: newAddress.trim() || undefined,
     };
     const updated = [...timeline, item].sort((a, b) => a.time.localeCompare(b.time));
     setTimeline(updated);
@@ -207,6 +210,8 @@ export default function TodayDetailPage() {
     });
     setNewTime("");
     setNewTitle("");
+    setNewAddress("");
+    setNewEmoji("📌");
     setIsAdding(false);
   }
 
@@ -217,6 +222,7 @@ export default function TodayDetailPage() {
     setEditTitle(item.title);
     setEditSubtitle(item.subtitle);
     setEditAddress(item.address ?? "");
+    setEditEmoji(item.emoji);
   }
 
   function saveEdit() {
@@ -228,6 +234,7 @@ export default function TodayDetailPage() {
       title: editTitle.trim(),
       subtitle: editSubtitle.trim(),
       address: editAddress.trim() || undefined,
+      emoji: editEmoji.trim() || "📌",
     };
     updated.sort((a, b) => a.time.localeCompare(b.time));
     setTimeline(updated);
@@ -296,13 +303,22 @@ export default function TodayDetailPage() {
       />
 
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-serif text-[1.9rem] font-medium text-[#2B2A28]">
-            Day {detail.day} · {detail.dateLabel}
-          </h1>
-          <p className="mt-1 text-[14px] text-[#9C9488]">{detail.city}</p>
-          <div className="mt-1">
-            <WeatherBadge city={detail.city} dayNumber={dayNumber} />
+        <div className="flex items-start gap-3">
+          <button
+            onClick={() => router.back()}
+            aria-label="返回上一頁"
+            className="mt-1 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-[#F7F3EC] text-[#2B2A28]"
+          >
+            <ArrowLeft className="h-4.5 w-4.5" strokeWidth={2} />
+          </button>
+          <div>
+            <h1 className="font-serif text-[1.9rem] font-medium text-[#2B2A28]">
+              Day {detail.day} · {detail.dateLabel}
+            </h1>
+            <p className="mt-1 text-[14px] text-[#9C9488]">{detail.city}</p>
+            <div className="mt-1">
+              <WeatherBadge city={detail.city} dayNumber={dayNumber} />
+            </div>
           </div>
         </div>
         <button onClick={() => setCalendarOpen(true)} aria-label="開啟月曆">
@@ -333,6 +349,14 @@ export default function TodayDetailPage() {
           <div className="mb-4 rounded-[16px] border border-[#ECE6DA] p-3">
             <div className="flex gap-2">
               <input
+                type="text"
+                value={newEmoji}
+                onChange={(e) => setNewEmoji(e.target.value)}
+                placeholder="📌"
+                maxLength={4}
+                className="w-[52px] rounded-[10px] border border-[#ECE6DA] px-2 py-2 text-center text-[18px] outline-none focus:border-[#A9BFA0]"
+              />
+              <input
                 type="time"
                 value={newTime}
                 onChange={(e) => setNewTime(e.target.value)}
@@ -346,6 +370,13 @@ export default function TodayDetailPage() {
                 className="flex-1 rounded-[10px] border border-[#ECE6DA] px-3 py-2 text-[14px] text-[#2B2A28] outline-none focus:border-[#A9BFA0]"
               />
             </div>
+            <input
+              type="text"
+              placeholder="正確地址（貼給 Google 地圖用，選填）"
+              value={newAddress}
+              onChange={(e) => setNewAddress(e.target.value)}
+              className="mt-2 w-full rounded-[10px] border border-[#ECE6DA] px-3 py-2 text-[14px] text-[#2B2A28] outline-none focus:border-[#A9BFA0]"
+            />
             <button
               onClick={addTimelineItem}
               className="mt-2 w-full rounded-[10px] bg-[#A9BFA0] py-2 text-[14px] font-medium text-white"
@@ -361,6 +392,14 @@ export default function TodayDetailPage() {
             return editingIndex === i ? (
               <div key={`edit-${i}`} className="border-t border-[#ECE6DA] py-3 first:border-t-0">
                 <div className="mb-2 flex gap-2">
+                  <input
+                    type="text"
+                    value={editEmoji}
+                    onChange={(e) => setEditEmoji(e.target.value)}
+                    placeholder="📌"
+                    maxLength={4}
+                    className="w-[52px] rounded-[10px] border border-[#ECE6DA] px-2 py-2 text-center text-[18px] outline-none focus:border-[#A9BFA0]"
+                  />
                   <input
                     type="time"
                     value={editTime}
