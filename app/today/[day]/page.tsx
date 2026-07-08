@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { CalendarDays, Plus, Check, MapPin, X, Pencil, Camera, Trash2, Banknote, CreditCard, ArrowLeft } from "lucide-react";
+import { CalendarDays, Plus, Check, MapPin, X, Pencil, Camera, Trash2, Banknote, CreditCard, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import BottomNav from "../../components/BottomNav";
 import TripCalendarSheet from "../../components/TripCalendarSheet";
 import WeatherBadge from "../../components/WeatherBadge";
@@ -24,6 +24,9 @@ export default function TodayDetailPage() {
   const { currentTripId } = useTripContext();
   const dayNumber = Number(params.day);
   const detail = trip.dayDetails[dayNumber];
+
+  const hasPrevDay = !!trip.dayDetails[dayNumber - 1];
+  const hasNextDay = !!trip.dayDetails[dayNumber + 1];
 
   const [tasks, setTasks] = useState<TaskItem[]>(detail?.tasks ?? []);
   const [timeline, setTimeline] = useState<TimelineItem[]>(detail?.timeline ?? []);
@@ -84,6 +87,12 @@ export default function TodayDetailPage() {
     }
   }, [searchParams]);
 
+  function goToDay(target: number) {
+    if (trip.dayDetails[target]) {
+      router.push(`/today/${target}`);
+    }
+  }
+
   function handleTouchStart(e: React.TouchEvent) {
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
@@ -98,10 +107,10 @@ export default function TodayDetailPage() {
 
     if (Math.abs(deltaX) < 60 || Math.abs(deltaX) < Math.abs(deltaY)) return;
 
-    if (deltaX < 0 && trip.dayDetails[dayNumber + 1]) {
-      router.push(`/today/${dayNumber + 1}`);
-    } else if (deltaX > 0 && trip.dayDetails[dayNumber - 1]) {
-      router.push(`/today/${dayNumber - 1}`);
+    if (deltaX < 0) {
+      goToDay(dayNumber + 1);
+    } else if (deltaX > 0) {
+      goToDay(dayNumber - 1);
     }
   }
 
@@ -331,6 +340,34 @@ export default function TodayDetailPage() {
         </div>
         <button onClick={() => setCalendarOpen(true)} aria-label="開啟月曆">
           <CalendarDays className="h-6 w-6 text-[#9C9488]" strokeWidth={1.75} />
+        </button>
+      </div>
+
+      {/* 上一天／下一天切換 */}
+      <div className="mt-4 flex items-center justify-between">
+        <button
+          onClick={() => goToDay(dayNumber - 1)}
+          disabled={!hasPrevDay}
+          className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-medium ${
+            hasPrevDay
+              ? "bg-[#F7F3EC] text-[#2B2A28]"
+              : "cursor-not-allowed text-[#D8D2C2]"
+          }`}
+        >
+          <ChevronLeft className="h-4 w-4" strokeWidth={2} />
+          {hasPrevDay ? `Day ${dayNumber - 1}` : "已是第一天"}
+        </button>
+        <button
+          onClick={() => goToDay(dayNumber + 1)}
+          disabled={!hasNextDay}
+          className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-medium ${
+            hasNextDay
+              ? "bg-[#F7F3EC] text-[#2B2A28]"
+              : "cursor-not-allowed text-[#D8D2C2]"
+          }`}
+        >
+          {hasNextDay ? `Day ${dayNumber + 1}` : "已是最後一天"}
+          <ChevronRight className="h-4 w-4" strokeWidth={2} />
         </button>
       </div>
 
