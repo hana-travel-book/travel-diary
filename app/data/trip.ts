@@ -66,8 +66,8 @@ export const trip = {
   title: "Thailand 2026",
   traveler: "Lucia ❤️ Hannah",
   start: "2026-07-30",
-  end: "2026-08-26",
-  dateRangeLabel: "30 Jul – 26 Aug",
+  end: "2026-08-25",
+  dateRangeLabel: "30 Jul – 25 Aug",
   totalDays: 28,
 
   heroImage: IMG.beach,
@@ -108,8 +108,7 @@ export const trip = {
     { day: 24, dateLabel: "22 Aug (Sat)", city: "Chiang Mai", title: "Princess Sirindhorn AstroPark", image: IMG.temple2 },
     { day: 25, dateLabel: "23 Aug (Sun)", city: "Chiang Mai", title: "退房 + 親子料理課", image: IMG.city },
     { day: 26, dateLabel: "24 Aug (Mon)", city: "Chiang Rai", title: "清萊一日遊", image: IMG.temple },
-    { day: 27, dateLabel: "25 Aug (Tue)", city: "Chiang Mai", title: "Fahlanna Art Museum", image: IMG.temple2 },
-    { day: 28, dateLabel: "26 Aug (Wed)", city: "Chiang Mai", title: "回台灣", image: IMG.beach },
+    { day: 27, dateLabel: "25 Aug (Tue)", city: "Chiang Mai", title: "回台灣", image: IMG.temple2 },
   ] as JourneyDay[],
 
   dayDetails: {
@@ -359,13 +358,6 @@ export const trip = {
     },
     27: {
       day: 27, dateLabel: "25 Aug (Tue)", city: "Chiang Mai",
-      timeline: [
-        { time: "10:00", title: "Fahlanna Art Museum", subtitle: "", emoji: "🎨" },
-      ],
-      tasks: [], expenseToday: 0,
-    },
-    28: {
-      day: 28, dateLabel: "26 Aug (Wed)", city: "Chiang Mai",
       timeline: [
         { time: "10:00", title: "退房前往機場", subtitle: "", emoji: "🧳" },
         { time: "--:--", title: "飛回台灣", subtitle: "機票尚未訂", emoji: "✈️" },
